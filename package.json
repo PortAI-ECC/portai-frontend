@@ -1,0 +1,41 @@
+{
+  "name": "portai-fe&uiux",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "AI 기반 포트폴리오 자동 생성기 (PortAI)",
+  "author": "KwakDahyun",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PortAI-ECC/portai-frontend.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@eslint/js": "^10.0.1",
+    "@rolldown/plugin-babel": "^0.2.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.6",
+    "vite": "^8.1.1"
+  }
+}
