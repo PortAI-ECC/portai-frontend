@@ -1,11 +1,11 @@
 # PortAI Frontend (React + Vite)
 
-## 📌 프로젝트 소개
+##  프로젝트 소개
 React + Vite 기반의 프론트엔드 저장소입니다. 빠른 개발 환경(HMR), 기본 ESLint 규칙, React Compiler 설정을 포함하여 UI/UX 프로토타입 제작과 프론트엔드 개발을 진행합니다.
 
 ---
 
-## 🚀 주요 특징
+##  주요 특징
 - 빠른 개발 서버: Vite 기반 HMR(Hot Module Replacement) 지원
 - React Compiler 활성화: 최신 React 기능을 활용 가능
 - ESLint 기본 규칙 포함: 코드 품질 유지
