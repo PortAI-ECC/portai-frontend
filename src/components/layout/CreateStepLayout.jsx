@@ -15,7 +15,7 @@ const Description = styled.p`
 `;
 
 const Body = styled.div`
-	margin-top: 40px;
+	margin-top: 32px;
 `;
 
 const Footer = styled.footer`

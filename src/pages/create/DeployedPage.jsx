@@ -17,10 +17,11 @@ const Title = styled.h1`
 	margin-bottom: 40px;
 `;
 
+// URL 줄과 아래 버튼 사이는 버튼 하나 폭(260px)만큼 띄운다.
 const UrlRow = styled.div`
 	display: flex;
 	gap: 16px;
-	margin-bottom: 40px;
+	margin-bottom: 260px;
 `;
 
 const UrlBox = styled.p`
@@ -28,6 +29,7 @@ const UrlBox = styled.p`
 	height: 56px;
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	padding: 0 20px;
 	font-size: 15px;
 	background: ${({ theme }) => theme.colors.surfaceSolid};

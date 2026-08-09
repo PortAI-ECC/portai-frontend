@@ -59,7 +59,8 @@ export const theme = {
 	},
 
 	layout: {
-		maxWidth: '1320px',
+		// 데스크톱 전용이라 넉넉하게. 좁게 보여야 하는 화면은 각자 max-width 를 건다.
+		maxWidth: '1600px',
 		headerHeight: '72px',
 	},
 

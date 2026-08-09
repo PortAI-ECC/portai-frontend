@@ -5,7 +5,7 @@ import Header from './Header';
 const Main = styled.main`
 	max-width: ${({ theme }) => theme.layout.maxWidth};
 	margin: 0 auto;
-	padding: 48px 32px 96px;
+	padding: 32px 32px 80px;
 `;
 
 function AppLayout() {

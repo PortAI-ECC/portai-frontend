@@ -71,21 +71,30 @@ function Header() {
 	const isHome = pathname === ROUTES.HOME;
 	const isSignUp = pathname === ROUTES.SIGNUP;
 
-	const renderGuestAction = () => {
+	// 로그인 여부와 무관하게 같은 자리를 쓴다. 시작 화면만 조용한 텍스트 링크.
+	const renderAction = () => {
+		if (isLoggedIn) {
+			return isHome ? (
+				<NavLink type="button" onClick={() => navigate(ROUTES.MYPAGE)}>
+					마이페이지
+				</NavLink>
+			) : (
+				<Button onClick={() => navigate(ROUTES.MYPAGE)}>마이페이지</Button>
+			);
+		}
+
 		// 회원가입 화면에서 회원가입 버튼은 의미가 없으니 홈으로 돌아가는 버튼을 준다.
 		if (isSignUp) {
 			return <Button onClick={() => navigate(ROUTES.HOME)}>홈</Button>;
 		}
 
-		if (isHome) {
-			return (
-				<NavLink type="button" onClick={() => navigate(ROUTES.SIGNUP)}>
-					회원가입
-				</NavLink>
-			);
-		}
-
-		return <Button onClick={() => navigate(ROUTES.SIGNUP)}>회원가입</Button>;
+		return isHome ? (
+			<NavLink type="button" onClick={() => navigate(ROUTES.SIGNUP)}>
+				회원가입
+			</NavLink>
+		) : (
+			<Button onClick={() => navigate(ROUTES.SIGNUP)}>회원가입</Button>
+		);
 	};
 
 	return (
@@ -97,18 +106,12 @@ function Header() {
 				</Wordmark>
 
 				<Actions>
-					{isLoggedIn ? (
-						<>
-							<NavLink type="button" onClick={() => navigate(ROUTES.MYPAGE)}>
-								마이페이지
-							</NavLink>
-							<NavLink type="button" onClick={handleSignOut}>
-								로그아웃
-							</NavLink>
-						</>
-					) : (
-						renderGuestAction()
+					{isLoggedIn && (
+						<NavLink type="button" onClick={handleSignOut}>
+							로그아웃
+						</NavLink>
 					)}
+					{renderAction()}
 				</Actions>
 			</Inner>
 		</Bar>

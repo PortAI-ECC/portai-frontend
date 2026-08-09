@@ -10,6 +10,8 @@ import { useAuthStore } from '../store/authStore';
 import { logIn } from '../api/auth';
 
 const Layout = styled.div`
+	max-width: 1280px;
+	margin: 0 auto;
 	display: grid;
 	grid-template-columns: 1fr minmax(360px, 400px);
 	gap: 80px;
