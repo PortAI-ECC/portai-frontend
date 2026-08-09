@@ -5,6 +5,7 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Field from '../components/common/Field';
 import Input from '../components/common/Input';
+import Modal from '../components/common/Modal';
 import { ROUTES } from '../constants/routes';
 import { signUp } from '../api/auth';
 import { messageOf } from '../api/client';
@@ -52,6 +53,18 @@ const LoginLink = styled.button`
 	color: ${({ theme }) => theme.colors.primary};
 `;
 
+const SuccessBody = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	text-align: center;
+`;
+
+const SuccessMessage = styled.p`
+	font-size: 14px;
+	color: ${({ theme }) => theme.colors.textSub};
+`;
+
 function SignUpPage() {
 	const navigate = useNavigate();
 
@@ -65,6 +78,9 @@ function SignUpPage() {
 	});
 	const [error, setError] = useState('');
 	const [submitting, setSubmitting] = useState(false);
+	// 가입 직후 홈으로 바로 넘겨버리면 성공했는지 헷갈려서, 확인 모달을
+	// 닫아야 비로소 이동한다.
+	const [signedUpName, setSignedUpName] = useState(null);
 
 	const handleChange = (event) => {
 		const { name, value } = event.target;
@@ -89,8 +105,9 @@ function SignUpPage() {
 				password: form.password,
 				phone: form.phone,
 			});
-			// signup 응답에는 토큰이 없어 자동 로그인이 불가능하다. 로그인 화면으로 보낸다.
-			navigate(ROUTES.HOME);
+			// signup 응답에는 토큰이 없어 자동 로그인이 불가능하다.
+			// 모달을 닫을 때 로그인 화면으로 보낸다.
+			setSignedUpName(form.name);
 		} catch (requestError) {
 			setError(messageOf(requestError, '회원가입에 실패했어요. 잠시 후 다시 시도해 주세요.'));
 		} finally {
@@ -106,7 +123,7 @@ function SignUpPage() {
 				<Form onSubmit={handleSubmit}>
 					<CardTitle>회원가입</CardTitle>
 
-					<Field label="이름" htmlFor="name">
+					<Field label="이름" htmlFor="name" required>
 						<Input
 							id="name"
 							name="name"
@@ -118,7 +135,7 @@ function SignUpPage() {
 						/>
 					</Field>
 
-					<Field label="이메일" htmlFor="email">
+					<Field label="이메일" htmlFor="email" required>
 						<Input
 							id="email"
 							name="email"
@@ -131,7 +148,7 @@ function SignUpPage() {
 						/>
 					</Field>
 
-					<Field label="연락처" htmlFor="phone">
+					<Field label="연락처" htmlFor="phone" required>
 						<Input
 							id="phone"
 							name="phone"
@@ -144,7 +161,12 @@ function SignUpPage() {
 						/>
 					</Field>
 
-					<Field label="비밀번호" htmlFor="password" message="8자 이상 입력해 주세요.">
+					<Field
+						label="비밀번호"
+						htmlFor="password"
+						message="8자 이상 입력해 주세요."
+						required
+					>
 						<Input
 							id="password"
 							name="password"
@@ -158,7 +180,7 @@ function SignUpPage() {
 						/>
 					</Field>
 
-					<Field label="비밀번호 확인" htmlFor="passwordConfirm">
+					<Field label="비밀번호 확인" htmlFor="passwordConfirm" required>
 						<Input
 							id="passwordConfirm"
 							name="passwordConfirm"
@@ -185,6 +207,21 @@ function SignUpPage() {
 					</Footer>
 				</Form>
 			</Card>
+
+			<Modal
+				open={signedUpName !== null}
+				onClose={() => navigate(ROUTES.HOME)}
+				title="회원가입 완료"
+			>
+				<SuccessBody>
+					<SuccessMessage>
+						{signedUpName}님, 가입이 완료됐어요. 로그인 후 이용해 주세요.
+					</SuccessMessage>
+					<Button size="lg" onClick={() => navigate(ROUTES.HOME)}>
+						로그인하러 가기
+					</Button>
+				</SuccessBody>
+			</Modal>
 		</Wrapper>
 	);
 }

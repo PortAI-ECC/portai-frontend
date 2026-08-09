@@ -6,12 +6,10 @@ import Field from '../../components/common/Field';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { ROUTES } from '../../constants/routes';
-import { DESIRED_JOBS } from '../../constants/desiredJobs';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
 import { getProfile, updateProfile } from '../../api/profile';
 import { messageOf } from '../../api/client';
-import { controlStyle } from '../../styles/controlStyle';
 
 const Form = styled.form`
 	max-width: 520px;
@@ -19,11 +17,6 @@ const Form = styled.form`
 	display: flex;
 	flex-direction: column;
 	gap: 24px;
-`;
-
-const Select = styled.select`
-	${controlStyle}
-	height: 44px;
 `;
 
 const Submit = styled.div`
@@ -99,7 +92,7 @@ function BasicInfoPage() {
 	return (
 		<CreateStepLayout step={0} title="기본 정보 입력" align="center">
 			<Form onSubmit={handleSubmit}>
-				<Field label="이름" htmlFor="name">
+				<Field label="이름" htmlFor="name" required>
 					<Input
 						id="name"
 						name="name"
@@ -110,7 +103,17 @@ function BasicInfoPage() {
 					/>
 				</Field>
 
-				<Field label="이메일" htmlFor="email">
+				<Field label="전공/학과" htmlFor="major">
+					<Input
+						id="major"
+						name="major"
+						placeholder="예) 전자전기공학과"
+						value={basicInfo.major}
+						onChange={handleChange}
+					/>
+				</Field>
+
+				<Field label="이메일" htmlFor="email" required>
 					<Input
 						id="email"
 						name="email"
@@ -118,6 +121,7 @@ function BasicInfoPage() {
 						placeholder="portai@example.com"
 						value={basicInfo.email}
 						onChange={handleChange}
+						required
 					/>
 				</Field>
 
@@ -133,18 +137,13 @@ function BasicInfoPage() {
 				</Field>
 
 				<Field label="희망 직무" htmlFor="desiredJob">
-					<Select
+					<Input
 						id="desiredJob"
 						name="desiredJob"
+						placeholder="비워두면 AI가 추천해드려요!"
 						value={basicInfo.desiredJob}
 						onChange={handleChange}
-					>
-						{DESIRED_JOBS.map((job) => (
-							<option key={job.value} value={job.value}>
-								{job.label}
-							</option>
-						))}
-					</Select>
+					/>
 				</Field>
 
 				<Field

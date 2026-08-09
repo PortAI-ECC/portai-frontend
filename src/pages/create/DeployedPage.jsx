@@ -53,6 +53,11 @@ const Actions = styled.div`
 	gap: 20px;
 `;
 
+// 두 버튼의 길이를 맞춘다.
+const ActionButton = styled(Button)`
+	width: 320px;
+`;
+
 const Note = styled.p`
 	margin-top: auto;
 	padding-top: 40px;
@@ -85,20 +90,18 @@ function DeployedPage() {
 			</UrlRow>
 
 			<Actions>
-				<Button variant="secondary" size="lg">
+				<ActionButton variant="secondary" size="lg">
 					이력서(PDF) 다운로드
-				</Button>
+				</ActionButton>
 
 				{isLoggedIn ? (
-					<Button variant="secondary" size="lg" onClick={() => navigate(ROUTES.MYPAGE)}>
-						마이페이지로 이동
-					</Button>
+					<ActionButton size="lg" onClick={() => navigate(ROUTES.MYPAGE)}>
+						마이페이지
+					</ActionButton>
 				) : (
-					<>
-						<Button variant="secondary" size="lg" onClick={() => navigate(ROUTES.HOME)}>
-							로그인으로 결과 저장하기
-						</Button>
-					</>
+					<ActionButton size="lg" onClick={() => navigate(ROUTES.HOME)}>
+						로그인으로 결과 저장하기
+					</ActionButton>
 				)}
 			</Actions>
 
