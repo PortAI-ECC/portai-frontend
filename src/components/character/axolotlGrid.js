@@ -79,6 +79,42 @@ export function buildGrid() {
 	return grid;
 }
 
+export const MINI_ICON_COLS = 11;
+export const MINI_ICON_ROWS = 10;
+
+// 입력창 안내글자 옆에 붙는 11x10 회색 아이콘. 큰 캐릭터와 달리 색을
+// 파생하지 않고 고정된 회색 2단계만 쓴다. 작아서 모양이 정확하지 않아도
+// 괜찮다 — 그게 픽셀 아이콘의 맛이다.
+const MINI_ICON_PATTERN = [
+	'..OOOOOOO..',
+	'.O.......O.',
+	'O..O...O..O',
+	'O..K...K..O',
+	'O.........O',
+	'O..OOOOO..O',
+	'.O.OOOOO.O.',
+	'..OOOOOOO..',
+	'...O...O...',
+	'...O...O...',
+];
+
+const MINI_ICON_PALETTE = {
+	'.': null,
+	O: '#c7c5c2',
+	K: '#8a8885',
+};
+
+export function buildMiniIconCells() {
+	const cells = [];
+	for (let y = 0; y < MINI_ICON_PATTERN.length; y += 1) {
+		for (let x = 0; x < MINI_ICON_PATTERN[y].length; x += 1) {
+			const color = MINI_ICON_PALETTE[MINI_ICON_PATTERN[y][x]];
+			if (color) cells.push({ x, y, color });
+		}
+	}
+	return cells;
+}
+
 /** 기준 색 하나에서 캐릭터 팔레트 전체를 파생한다. */
 export function buildPalette(base) {
 	return {

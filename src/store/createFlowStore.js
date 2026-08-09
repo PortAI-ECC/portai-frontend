@@ -7,7 +7,17 @@ const emptyFreeTexts = Object.fromEntries(RECORD_CATEGORIES.map(({ key }) => [ke
 const initialState = {
 	// 필드명은 /api/profile 스키마를 따른다.
 	// major 만 예외로, 프로필이 아니라 education.major 로 가는 값이다.
-	basicInfo: { name: '', major: '', email: '', phone: '', desiredJob: '', introOneLiner: '' },
+	// photoName 도 예외 — 실제 File 은 직렬화가 안 돼 저장할 수 없어 파일명만 기억해 둔다.
+	// (채용 공고 업로드의 fileName 과 같은 방식)
+	basicInfo: {
+		name: '',
+		major: '',
+		email: '',
+		phone: '',
+		desiredJob: '',
+		introOneLiner: '',
+		photoName: '',
+	},
 	links: [],
 	freeTexts: emptyFreeTexts,
 	jobPosting: { mode: 'url', url: '', text: '', fileName: '' },

@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import CreateStepLayout from '../../components/layout/CreateStepLayout';
 import Field from '../../components/common/Field';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import { DefaultAvatarIcon } from '../../components/common/icons';
+import AxolotlMiniIcon from '../../components/character/AxolotlMiniIcon';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
@@ -37,6 +39,79 @@ const ErrorText = styled.p`
 	color: ${({ theme }) => theme.colors.danger};
 `;
 
+const PhotoRow = styled.div`
+	display: flex;
+	align-items: center;
+	gap: 20px;
+`;
+
+const PhotoPreview = styled.div`
+	flex: none;
+	width: 72px;
+	height: 72px;
+	border-radius: 50%;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: ${({ theme }) => theme.colors.primarySoft};
+	color: ${({ theme }) => theme.colors.primary};
+
+	img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	svg {
+		width: 32px;
+		height: 32px;
+	}
+`;
+
+const PhotoActions = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+`;
+
+// 진한 흰색 secondary 버튼이 아바타 옆에서 너무 튀어서, 아바타와 같은
+// 옅은 보라 배경으로 톤을 맞춘다.
+const PhotoButton = styled(Button)`
+	background: ${({ theme }) => theme.colors.primarySoft};
+	border-color: transparent;
+	color: ${({ theme }) => theme.colors.primary};
+
+	&:hover:not(:disabled) {
+		filter: brightness(0.97);
+	}
+`;
+
+const PhotoFileName = styled.span`
+	font-size: 13px;
+	color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const HiddenFileInput = styled.input`
+	display: none;
+`;
+
+// 디자인 시안대로 입력창 안내글자 왼쪽에 작은 우파 아이콘을 고정으로 둔다.
+const IconField = styled.div`
+	position: relative;
+
+	input {
+		padding-left: 40px;
+	}
+`;
+
+const FieldIcon = styled.div`
+	position: absolute;
+	left: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	pointer-events: none;
+`;
+
 function BasicInfoPage() {
 	const navigate = useNavigate();
 	const isLoggedIn = useAuthStore(selectIsLoggedIn);
@@ -45,6 +120,17 @@ function BasicInfoPage() {
 
 	const [error, setError] = useState('');
 	const [saving, setSaving] = useState(false);
+
+	// 실제 File 은 zustand persist(로컬스토리지) 로 직렬화가 안 돼 컴포넌트 로컬에만 둔다.
+	// 새로고침하면 미리보기는 사라지고 파일명만 남는다 — 채용 공고 업로드와 같은 한계.
+	const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
+	const fileInputRef = useRef(null);
+
+	useEffect(() => {
+		return () => {
+			if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+		};
+	}, [photoPreviewUrl]);
 
 	// 로그인 상태면 저장된 프로필로 채워 준다. 비로그인은 로컬 입력만 유지한다.
 	useEffect(() => {
@@ -65,6 +151,17 @@ function BasicInfoPage() {
 
 	const handleChange = (event) => {
 		setBasicInfo({ [event.target.name]: event.target.value });
+	};
+
+	const handlePhotoSelect = (event) => {
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		setPhotoPreviewUrl((prev) => {
+			if (prev) URL.revokeObjectURL(prev);
+			return URL.createObjectURL(file);
+		});
+		setBasicInfo({ photoName: file.name });
 	};
 
 	const handleSubmit = async (event) => {
@@ -92,6 +189,37 @@ function BasicInfoPage() {
 	return (
 		<CreateStepLayout step={0} title="기본 정보 입력" align="center">
 			<Form onSubmit={handleSubmit}>
+				<Field label="프로필 사진">
+					<PhotoRow>
+						<PhotoPreview>
+							{photoPreviewUrl ? (
+								<img src={photoPreviewUrl} alt="" />
+							) : (
+								<DefaultAvatarIcon />
+							)}
+						</PhotoPreview>
+						<PhotoActions>
+							<PhotoButton
+								type="button"
+								variant="secondary"
+								size="sm"
+								onClick={() => fileInputRef.current?.click()}
+							>
+								사진 선택
+							</PhotoButton>
+							{basicInfo.photoName && (
+								<PhotoFileName>{basicInfo.photoName}</PhotoFileName>
+							)}
+						</PhotoActions>
+						<HiddenFileInput
+							ref={fileInputRef}
+							type="file"
+							accept="image/*"
+							onChange={handlePhotoSelect}
+						/>
+					</PhotoRow>
+				</Field>
+
 				<Field label="이름" htmlFor="name" required>
 					<Input
 						id="name"
@@ -137,13 +265,18 @@ function BasicInfoPage() {
 				</Field>
 
 				<Field label="희망 직무" htmlFor="desiredJob">
-					<Input
-						id="desiredJob"
-						name="desiredJob"
-						placeholder="비워두면 AI가 추천해드려요!"
-						value={basicInfo.desiredJob}
-						onChange={handleChange}
-					/>
+					<IconField>
+						<FieldIcon>
+							<AxolotlMiniIcon size={20} title="" />
+						</FieldIcon>
+						<Input
+							id="desiredJob"
+							name="desiredJob"
+							placeholder="비워두면 AI가 추천해드려요!"
+							value={basicInfo.desiredJob}
+							onChange={handleChange}
+						/>
+					</IconField>
 				</Field>
 
 				<Field
