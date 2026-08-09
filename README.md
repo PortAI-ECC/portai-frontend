@@ -8,7 +8,7 @@ Velog/Notion 등의 기술블로그, GitHub 프로젝트, 활동 이력 등을 �
 
 ## 🌐 배포
 
-- 빌드 결과(`dist/`)를 Netlify(정적 호스팅 서비스)에 업로드 : https://portai-frontend0.netlify.app/
+- 빌드 결과(`dist/`)를 Netlify(정적 호스팅 서비스)에 업로드 : https://portai-frontend0.netlify.app
 - CI/CD(GitHub Actions 등)를 설정하면 자동 빌드/배포도 가능합니다.
 
 ---
