@@ -14,8 +14,11 @@ const Layout = styled.div`
 	max-width: 1280px;
 	margin: 0 auto;
 	display: grid;
-	grid-template-columns: 1fr minmax(360px, 400px);
-	gap: 80px;
+	/* 텍스트 칸이 남는 그리드 공간을 다 먹지 않도록 폭을 직접 제한해
+	   카드와의 사이가 gap 값 그대로 보이게 한다. */
+	grid-template-columns: minmax(0, 560px) minmax(360px, 400px);
+	justify-content: space-between;
+	gap: 120px;
 	align-items: center;
 	min-height: 60vh;
 

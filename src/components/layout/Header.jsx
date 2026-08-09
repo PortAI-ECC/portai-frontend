@@ -41,6 +41,7 @@ const Actions = styled.nav`
 	gap: 24px;
 `;
 
+// 밑줄은 항상 떠 있고, 호버 표시는 밑줄이 아니라 반투명 흰 상자로 준다.
 const NavLink = styled.button`
 	font-family: ${({ theme }) => theme.font.display};
 	font-size: 14px;
@@ -48,11 +49,14 @@ const NavLink = styled.button`
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	color: ${({ theme }) => theme.colors.text};
-	padding-bottom: 6px;
-	border-bottom: 2px solid transparent;
+	padding: 6px 12px 6px;
+	border-radius: ${({ theme }) => theme.radii.sm};
+	border-bottom: 2px solid ${({ theme }) => theme.colors.text};
+	background: transparent;
+	transition: background 0.15s;
 
 	&:hover {
-		border-bottom-color: ${({ theme }) => theme.colors.text};
+		background: rgba(255, 255, 255, 0.45);
 	}
 `;
 
@@ -80,10 +84,17 @@ function Header() {
 	// 나머지 화면에서는 눈에 띄는 버튼으로 올린다.
 	const isHome = pathname === ROUTES.HOME;
 	const isSignUp = pathname === ROUTES.SIGNUP;
+	const isMyPage = pathname === ROUTES.MYPAGE;
 
 	// 로그인 여부와 무관하게 같은 자리를 쓴다. 시작 화면만 조용한 텍스트 링크.
 	const renderAction = () => {
 		if (isLoggedIn) {
+			// 이미 마이페이지에 있으면 '마이페이지로 이동' 버튼은 의미가 없다.
+			// 그 자리를 로그아웃으로 대신한다.
+			if (isMyPage) {
+				return <Button onClick={handleSignOut}>로그아웃</Button>;
+			}
+
 			return isHome ? (
 				<NavLink type="button" onClick={() => navigate(ROUTES.MYPAGE)}>
 					마이페이지
@@ -116,7 +127,7 @@ function Header() {
 				</Wordmark>
 
 				<Actions>
-					{isLoggedIn && (
+					{isLoggedIn && !isMyPage && (
 						<NavLink type="button" onClick={handleSignOut}>
 							로그아웃
 						</NavLink>
