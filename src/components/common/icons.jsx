@@ -28,6 +28,23 @@ export function SwapCardsIcon(props) {
 	);
 }
 
+/** 프로필 사진 기본값 — 흔한 사람 실루엣 아이콘 */
+export function DefaultAvatarIcon(props) {
+	return (
+		<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+			<circle cx="12" cy="8.5" r="3.5" fill="currentColor" opacity="0.55" />
+			<path
+				d="M4.5 20c1.2-3.8 4.2-6 7.5-6s6.3 2.2 7.5 6"
+				stroke="currentColor"
+				strokeWidth="1.8"
+				strokeLinecap="round"
+				fill="none"
+				opacity="0.55"
+			/>
+		</svg>
+	);
+}
+
 /** 전체화면 미리보기 — 네 모서리 꺾쇠 */
 export function FullscreenIcon(props) {
 	return (

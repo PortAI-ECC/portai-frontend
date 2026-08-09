@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Field from '../components/common/Field';
 import Input from '../components/common/Input';
+import Spinner from '../components/common/Spinner';
+import { DefaultAvatarIcon } from '../components/common/icons';
 import { ROUTES } from '../constants/routes';
-import { useAuthStore } from '../store/authStore';
+import { selectIsLoggedIn, useAuthStore } from '../store/authStore';
 import { logIn } from '../api/auth';
+import { getProfile } from '../api/profile';
 import { messageOf } from '../api/client';
 
 const Layout = styled.div`
@@ -90,7 +93,8 @@ const CardTitle = styled.h2`
 	font-weight: 700;
 `;
 
-const GuestLink = styled.button`
+// 비로그인일 땐 '비로그인으로 진행', 로그인일 땐 '마이페이지' 링크로 재사용한다.
+const FooterLink = styled.button`
 	font-size: 14px;
 	color: ${({ theme }) => theme.colors.textSub};
 	&:hover {
@@ -103,19 +107,181 @@ const ErrorText = styled.p`
 	color: ${({ theme }) => theme.colors.danger};
 `;
 
+// 로그인 상태에서 홈에 오면 로그인 폼 대신 이 카드가 같은 자리·크기로 뜬다.
+const ProfileBody = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+`;
+
+const ProfileHead = styled.div`
+	display: flex;
+	align-items: center;
+	gap: 16px;
+`;
+
+const Avatar = styled.div`
+	flex: none;
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: ${({ theme }) => theme.colors.primarySoft};
+	color: ${({ theme }) => theme.colors.primary};
+
+	img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	svg {
+		width: 28px;
+		height: 28px;
+	}
+`;
+
+const ProfileName = styled.h2`
+	font-size: 22px;
+	font-weight: 700;
+`;
+
+const ProfileFields = styled.dl`
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+`;
+
+const ProfileRow = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+`;
+
+const ProfileLabel = styled.dt`
+	font-size: 12px;
+	color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const ProfileValue = styled.dd`
+	font-size: 15px;
+	color: ${({ theme }) => theme.colors.text};
+`;
+
 const HIGHLIGHTS = [
 	'희망 직무에 맞춰 초점을 맞춘 포트폴리오 생성',
 	'채용 공고 분석 후 맞춤형 결과물 제공',
 	'생성 후에도 자유롭게 편집·업데이트 가능',
 ];
 
+// GET /api/profile 응답에서 이 순서대로, 값이 있는 것만 보여준다.
+const PROFILE_FIELDS = [
+	{ key: 'email', label: '이메일' },
+	{ key: 'desiredJob', label: '희망 직무' },
+	{ key: 'introOneLiner', label: '한 줄 소개' },
+];
+
+function LoginCard({ form, error, submitting, onChange, onSubmit, onGuest }) {
+	return (
+		<Form onSubmit={onSubmit}>
+			<CardTitle>로그인</CardTitle>
+
+			<Field label="이메일" htmlFor="email">
+				<Input
+					id="email"
+					name="email"
+					type="email"
+					autoComplete="email"
+					placeholder="portai@example.com"
+					value={form.email}
+					onChange={onChange}
+					required
+				/>
+			</Field>
+
+			<Field label="비밀번호" htmlFor="password">
+				<Input
+					id="password"
+					name="password"
+					type="password"
+					autoComplete="current-password"
+					placeholder="••••••••"
+					value={form.password}
+					onChange={onChange}
+					required
+				/>
+			</Field>
+
+			{error && <ErrorText>{error}</ErrorText>}
+
+			<Button type="submit" size="lg" fullWidth disabled={submitting}>
+				{submitting ? '로그인 중...' : '로그인'}
+			</Button>
+
+			<FooterLink type="button" onClick={onGuest}>
+				비로그인으로 진행 →
+			</FooterLink>
+		</Form>
+	);
+}
+
+function ProfileCard({ profile, loading, onOpenMyPage }) {
+	if (loading) return <Spinner message="프로필을 불러오는 중..." />;
+
+	return (
+		<ProfileBody>
+			<ProfileHead>
+				<Avatar>
+					{profile?.profileImageUrl ? (
+						<img src={profile.profileImageUrl} alt="" />
+					) : (
+						<DefaultAvatarIcon />
+					)}
+				</Avatar>
+				{profile?.name && <ProfileName>{profile.name}</ProfileName>}
+			</ProfileHead>
+
+			<ProfileFields>
+				{PROFILE_FIELDS.filter(({ key }) => profile?.[key]).map(({ key, label }) => (
+					<ProfileRow key={key}>
+						<ProfileLabel>{label}</ProfileLabel>
+						<ProfileValue>{profile[key]}</ProfileValue>
+					</ProfileRow>
+				))}
+			</ProfileFields>
+
+			<FooterLink type="button" onClick={onOpenMyPage}>
+				마이페이지 →
+			</FooterLink>
+		</ProfileBody>
+	);
+}
+
 function HomePage() {
 	const navigate = useNavigate();
+	const isLoggedIn = useAuthStore(selectIsLoggedIn);
 	const signIn = useAuthStore((state) => state.signIn);
 
 	const [form, setForm] = useState({ email: '', password: '' });
 	const [error, setError] = useState('');
 	const [submitting, setSubmitting] = useState(false);
+
+	const [profile, setProfile] = useState(null);
+	const [profileLoading, setProfileLoading] = useState(isLoggedIn);
+
+	// 로그인 상태로 홈에 오면 로그인 폼 대신 이 프로필을 보여준다.
+	// (로그인은 항상 마이페이지로 이동시키므로, 홈이 isLoggedIn=true 로 보이는 건
+	// 로고 클릭 등으로 새로 진입했을 때뿐이라 초기 state 만으로 로딩 표시가 맞는다.)
+	useEffect(() => {
+		if (!isLoggedIn) return;
+
+		getProfile()
+			.then(setProfile)
+			.catch(() => setProfile(null))
+			.finally(() => setProfileLoading(false));
+	}, [isLoggedIn]);
 
 	const handleChange = (event) => {
 		const { name, value } = event.target;
@@ -163,45 +329,22 @@ function HomePage() {
 			</div>
 
 			<Card>
-				<Form onSubmit={handleSubmit}>
-					<CardTitle>로그인</CardTitle>
-
-					<Field label="이메일" htmlFor="email">
-						<Input
-							id="email"
-							name="email"
-							type="email"
-							autoComplete="email"
-							placeholder="portai@example.com"
-							value={form.email}
-							onChange={handleChange}
-							required
-						/>
-					</Field>
-
-					<Field label="비밀번호" htmlFor="password">
-						<Input
-							id="password"
-							name="password"
-							type="password"
-							autoComplete="current-password"
-							placeholder="••••••••"
-							value={form.password}
-							onChange={handleChange}
-							required
-						/>
-					</Field>
-
-					{error && <ErrorText>{error}</ErrorText>}
-
-					<Button type="submit" size="lg" fullWidth disabled={submitting}>
-						{submitting ? '로그인 중...' : '로그인'}
-					</Button>
-
-					<GuestLink type="button" onClick={() => navigate(ROUTES.CREATE_BASIC)}>
-						비로그인으로 진행 →
-					</GuestLink>
-				</Form>
+				{isLoggedIn ? (
+					<ProfileCard
+						profile={profile}
+						loading={profileLoading}
+						onOpenMyPage={() => navigate(ROUTES.MYPAGE)}
+					/>
+				) : (
+					<LoginCard
+						form={form}
+						error={error}
+						submitting={submitting}
+						onChange={handleChange}
+						onSubmit={handleSubmit}
+						onGuest={() => navigate(ROUTES.CREATE_BASIC)}
+					/>
+				)}
 			</Card>
 		</Layout>
 	);

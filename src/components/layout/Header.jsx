@@ -80,27 +80,21 @@ function Header() {
 		navigate(ROUTES.HOME);
 	};
 
-	// 시작 화면에는 로그인 카드가 이미 있어 헤더는 조용한 텍스트 링크로 두고,
-	// 나머지 화면에서는 눈에 띄는 버튼으로 올린다.
+	// 시작 화면에는 로그인 카드(또는 프로필 카드)가 이미 있어 헤더는 조용한
+	// 텍스트 링크로 두고, 나머지 화면에서는 눈에 띄는 버튼으로 올린다.
 	const isHome = pathname === ROUTES.HOME;
 	const isSignUp = pathname === ROUTES.SIGNUP;
-	const isMyPage = pathname === ROUTES.MYPAGE;
 
-	// 로그인 여부와 무관하게 같은 자리를 쓴다. 시작 화면만 조용한 텍스트 링크.
+	// 로그인 상태에서는 헤더에 액션을 하나만 둔다 — 로그아웃.
+	// 마이페이지로 가는 길은 홈의 프로필 카드 쪽에 따로 있다.
 	const renderAction = () => {
 		if (isLoggedIn) {
-			// 이미 마이페이지에 있으면 '마이페이지로 이동' 버튼은 의미가 없다.
-			// 그 자리를 로그아웃으로 대신한다.
-			if (isMyPage) {
-				return <Button onClick={handleSignOut}>로그아웃</Button>;
-			}
-
 			return isHome ? (
-				<NavLink type="button" onClick={() => navigate(ROUTES.MYPAGE)}>
-					마이페이지
+				<NavLink type="button" onClick={handleSignOut}>
+					로그아웃
 				</NavLink>
 			) : (
-				<Button onClick={() => navigate(ROUTES.MYPAGE)}>마이페이지</Button>
+				<Button onClick={handleSignOut}>로그아웃</Button>
 			);
 		}
 
@@ -126,14 +120,7 @@ function Header() {
 					PORTAI
 				</Wordmark>
 
-				<Actions>
-					{isLoggedIn && !isMyPage && (
-						<NavLink type="button" onClick={handleSignOut}>
-							로그아웃
-						</NavLink>
-					)}
-					{renderAction()}
-				</Actions>
+				<Actions>{renderAction()}</Actions>
 			</Inner>
 		</Bar>
 	);
