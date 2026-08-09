@@ -7,6 +7,7 @@ import Spinner from '../components/common/Spinner';
 import { RECORD_CATEGORIES } from '../constants/recordCategories';
 import { ROUTES } from '../constants/routes';
 import { getGenerations } from '../api/generations';
+import { RECORD_APIS } from '../api/records';
 
 // 와이어프레임상 '+ 새로 만들기'는 마이페이지 제목줄 오른쪽에만 있다.
 const TitleRow = styled.div`
@@ -117,11 +118,32 @@ function MyPage() {
 	const navigate = useNavigate();
 	const [generations, setGenerations] = useState(null);
 	const [failed, setFailed] = useState(false);
+	const [counts, setCounts] = useState({});
 
 	useEffect(() => {
 		getGenerations()
-			.then((data) => setGenerations(data.items ?? data))
+			.then((data) => setGenerations(data.items ?? data.generations ?? data))
 			.catch(() => setFailed(true));
+	}, []);
+
+	// 카드마다 항목 수를 보여주려면 분류별 목록을 각각 받아야 한다.
+	useEffect(() => {
+		let cancelled = false;
+
+		Promise.all(
+			RECORD_CATEGORIES.map(({ key }) =>
+				RECORD_APIS[key]
+					.listItems()
+					.then((items) => [key, items.length])
+					.catch(() => [key, null]),
+			),
+		).then((entries) => {
+			if (!cancelled) setCounts(Object.fromEntries(entries));
+		});
+
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
 	return (
@@ -138,7 +160,13 @@ function MyPage() {
 						{RECORD_CATEGORIES.map(({ key, label }) => (
 							<CategoryCard key={key} type="button">
 								<CategoryName>{label}</CategoryName>
-								<CategoryCount>0개 항목</CategoryCount>
+								<CategoryCount>
+									{counts[key] === undefined
+										? '불러오는 중...'
+										: counts[key] === null
+											? '불러오지 못함'
+											: `${counts[key]}개 항목`}
+								</CategoryCount>
 							</CategoryCard>
 						))}
 					</CategoryGrid>

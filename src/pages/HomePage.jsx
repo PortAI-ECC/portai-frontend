@@ -8,6 +8,7 @@ import Input from '../components/common/Input';
 import { ROUTES } from '../constants/routes';
 import { useAuthStore } from '../store/authStore';
 import { logIn } from '../api/auth';
+import { messageOf } from '../api/client';
 
 const Layout = styled.div`
 	max-width: 1280px;
@@ -125,10 +126,14 @@ function HomePage() {
 
 		try {
 			const data = await logIn(form);
-			signIn({ accessToken: data.accessToken, user: data.user });
+			signIn({
+				accessToken: data.accessToken,
+				refreshToken: data.refreshToken,
+				user: data.user,
+			});
 			navigate(ROUTES.MYPAGE);
-		} catch {
-			setError('이메일 또는 비밀번호를 확인해 주세요.');
+		} catch (requestError) {
+			setError(messageOf(requestError, '이메일 또는 비밀번호를 확인해 주세요.'));
 		} finally {
 			setSubmitting(false);
 		}

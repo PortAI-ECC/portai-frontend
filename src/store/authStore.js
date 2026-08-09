@@ -1,17 +1,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-// accessToken 은 메모리에만 두고 refreshToken 은 httpOnly 쿠키로 받는 것이 안전하지만,
-// 백엔드 쿠키 설정 전까지는 새로고침 유지를 위해 localStorage 에 보관한다.
+// 명세서상 로그인 응답이 refreshToken 을 본문으로 내려주고, 갱신·로그아웃 때
+// 그 값을 다시 body 로 보내야 한다. 그래서 클라이언트가 직접 보관한다.
 export const useAuthStore = create(
 	persist(
 		(set) => ({
 			accessToken: null,
+			refreshToken: null,
 			user: null,
 
-			signIn: ({ accessToken, user }) => set({ accessToken, user }),
+			signIn: ({ accessToken, refreshToken, user }) =>
+				set({ accessToken, refreshToken, user }),
 			setAccessToken: (accessToken) => set({ accessToken }),
-			signOut: () => set({ accessToken: null, user: null }),
+			signOut: () => set({ accessToken: null, refreshToken: null, user: null }),
 		}),
 		{ name: 'portai-auth' },
 	),

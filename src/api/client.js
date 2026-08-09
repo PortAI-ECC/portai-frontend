@@ -3,7 +3,6 @@ import { useAuthStore } from '../store/authStore';
 
 export const apiClient = axios.create({
 	baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
-	withCredentials: true,
 	timeout: 15000,
 });
 
@@ -23,15 +22,21 @@ apiClient.interceptors.response.use(
 	async (error) => {
 		const original = error.config;
 		const isRefreshCall = original?.url?.includes('/auth/refresh');
+		const { refreshToken } = useAuthStore.getState();
 
-		if (error.response?.status !== 401 || original?._retried || isRefreshCall) {
+		if (
+			error.response?.status !== 401 ||
+			original?._retried ||
+			isRefreshCall ||
+			!refreshToken
+		) {
 			return Promise.reject(error);
 		}
 
 		original._retried = true;
 
 		try {
-			refreshRequest = refreshRequest ?? apiClient.post('/auth/refresh');
+			refreshRequest = refreshRequest ?? apiClient.post('/auth/refresh', { refreshToken });
 			const { data } = await refreshRequest;
 			useAuthStore.getState().setAccessToken(data.accessToken);
 			return apiClient(original);
@@ -43,3 +48,8 @@ apiClient.interceptors.response.use(
 		}
 	},
 );
+
+/** 명세서의 에러 응답({ status, error, message })에서 사람이 읽을 문구만 꺼낸다. */
+export function messageOf(error, fallback) {
+	return error?.response?.data?.message ?? fallback;
+}

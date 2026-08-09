@@ -7,6 +7,7 @@ import Field from '../components/common/Field';
 import Input from '../components/common/Input';
 import { ROUTES } from '../constants/routes';
 import { signUp } from '../api/auth';
+import { messageOf } from '../api/client';
 
 const Wrapper = styled.div`
 	max-width: 460px;
@@ -54,7 +55,14 @@ const LoginLink = styled.button`
 function SignUpPage() {
 	const navigate = useNavigate();
 
-	const [form, setForm] = useState({ email: '', password: '', passwordConfirm: '' });
+	// 명세서상 signup 은 name / email / password / phone 을 모두 요구한다.
+	const [form, setForm] = useState({
+		name: '',
+		email: '',
+		phone: '',
+		password: '',
+		passwordConfirm: '',
+	});
 	const [error, setError] = useState('');
 	const [submitting, setSubmitting] = useState(false);
 
@@ -75,15 +83,16 @@ function SignUpPage() {
 		setSubmitting(true);
 
 		try {
-			await signUp({ email: form.email, password: form.password });
-			// 가입 후 자동 로그인은 백엔드 응답 형태가 확정되면 붙인다. 지금은 로그인 화면으로 보낸다.
+			await signUp({
+				name: form.name,
+				email: form.email,
+				password: form.password,
+				phone: form.phone,
+			});
+			// signup 응답에는 토큰이 없어 자동 로그인이 불가능하다. 로그인 화면으로 보낸다.
 			navigate(ROUTES.HOME);
 		} catch (requestError) {
-			setError(
-				requestError.response?.status === 409
-					? '이미 가입된 이메일이에요.'
-					: '회원가입에 실패했어요. 잠시 후 다시 시도해 주세요.',
-			);
+			setError(messageOf(requestError, '회원가입에 실패했어요. 잠시 후 다시 시도해 주세요.'));
 		} finally {
 			setSubmitting(false);
 		}
@@ -97,6 +106,18 @@ function SignUpPage() {
 				<Form onSubmit={handleSubmit}>
 					<CardTitle>회원가입</CardTitle>
 
+					<Field label="이름" htmlFor="name">
+						<Input
+							id="name"
+							name="name"
+							autoComplete="name"
+							placeholder="이름을 입력하세요"
+							value={form.name}
+							onChange={handleChange}
+							required
+						/>
+					</Field>
+
 					<Field label="이메일" htmlFor="email">
 						<Input
 							id="email"
@@ -105,6 +126,19 @@ function SignUpPage() {
 							autoComplete="email"
 							placeholder="portai@example.com"
 							value={form.email}
+							onChange={handleChange}
+							required
+						/>
+					</Field>
+
+					<Field label="연락처" htmlFor="phone">
+						<Input
+							id="phone"
+							name="phone"
+							type="tel"
+							autoComplete="tel"
+							placeholder="010-0000-0000"
+							value={form.phone}
 							onChange={handleChange}
 							required
 						/>
