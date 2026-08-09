@@ -74,15 +74,16 @@ const PhotoActions = styled.div`
 	gap: 4px;
 `;
 
-// 진한 흰색 secondary 버튼이 아바타 옆에서 너무 튀어서, 아바타와 같은
-// 옅은 보라 배경으로 톤을 맞춘다.
+// 진한 흰색 secondary 버튼이 아바타 옆에서 너무 튀어서, 배경은 아래
+// 텍스트 입력창과, 글자색은 '이름' 라벨과 같은 톤(textSub, #6B5A93)으로
+// 맞춘다.
 const PhotoButton = styled(Button)`
-	background: ${({ theme }) => theme.colors.primarySoft};
-	border-color: transparent;
-	color: ${({ theme }) => theme.colors.primary};
+	background: ${({ theme }) => theme.colors.surface};
+	border-color: ${({ theme }) => theme.colors.border};
+	color: ${({ theme }) => theme.colors.textSub};
 
 	&:hover:not(:disabled) {
-		filter: brightness(0.97);
+		background: ${({ theme }) => theme.colors.surfaceSolid};
 	}
 `;
 
