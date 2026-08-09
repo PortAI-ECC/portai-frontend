@@ -4,29 +4,49 @@ import styled from '@emotion/styled';
 import CreateStepLayout from '../../components/layout/CreateStepLayout';
 import Textarea from '../../components/common/Textarea';
 import Button from '../../components/common/Button';
+import AiQuestionCharacter from '../../components/character/AiQuestionCharacter';
 import { RECORD_CATEGORIES } from '../../constants/recordCategories';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 
 const Layout = styled.div`
 	display: grid;
-	grid-template-columns: minmax(0, 820px) 300px;
+	grid-template-columns: minmax(0, 900px) 300px;
 	gap: 40px;
 	justify-content: center;
 	align-items: start;
 
-	@media (max-width: 1180px) {
-		grid-template-columns: minmax(0, 820px);
+	@media (max-width: 1280px) {
+		grid-template-columns: minmax(0, 900px);
 	}
 `;
 
+// 열린 항목의 입력창을 키우면 아래 분야들이 화면 밖으로 밀리므로,
+// 목록 자체에 스크롤을 줘서 '다음' 버튼이 항상 보이게 한다.
 const Accordion = styled.div`
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+	max-height: 560px;
+	overflow-y: auto;
+	padding-right: 8px;
+
+	/* 스크롤바가 파스텔 배경을 해치지 않도록 얇게 */
+	&::-webkit-scrollbar {
+		width: 8px;
+	}
+	&::-webkit-scrollbar-thumb {
+		background: ${({ theme }) => theme.colors.border};
+		border-radius: 999px;
+	}
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
 `;
 
 const Section = styled.section`
+	/* 스크롤 컨테이너 안에서 항목이 찌그러지지 않도록 축소를 막는다. */
+	flex: none;
 	background: ${({ theme }) => theme.colors.surface};
 	border: 1px solid ${({ theme }) => theme.colors.border};
 	border-radius: ${({ theme }) => theme.radii.lg};
@@ -55,25 +75,25 @@ const Panel = styled.div`
 	padding: 0 20px 20px;
 `;
 
-const Hint = styled.aside`
-	padding: 20px;
-	background: ${({ theme }) => theme.colors.surfaceSolid};
-	border: 1px solid ${({ theme }) => theme.colors.border};
-	border-radius: ${({ theme }) => theme.radii.lg};
+const BigTextarea = styled(Textarea)`
+	min-height: 280px;
+`;
+
+const HintColumn = styled.div`
 	position: sticky;
-	top: 96px;
+	top: 32px;
 `;
 
-const HintTitle = styled.p`
-	font-size: 14px;
-	font-weight: 700;
-	margin-bottom: 8px;
-`;
-
-const HintText = styled.p`
-	font-size: 14px;
-	color: ${({ theme }) => theme.colors.textSub};
-`;
+// 분야마다 우파가 던지는 확장 질문. 백엔드의 확장 질문 생성 API 가 붙으면
+// 이 표 대신 응답값을 넣는다.
+const FALLBACK_QUESTIONS = {
+	contests: '공모전에서 어떤 역할을 맡으셨나요?',
+	careers: '그 인턴십에서 직접 만든 결과물은 무엇인가요?',
+	certificates: '자격증을 딴 이유가 있었나요?',
+	education: '교육에서 배운 걸 어디에 써보셨어요?',
+	techStacks: '가장 자신 있는 기술은 무엇인가요?',
+	activities: '그 활동에서 가장 기억에 남는 순간은요?',
+};
 
 function FreeTextPage() {
 	const navigate = useNavigate();
@@ -117,7 +137,7 @@ function FreeTextPage() {
 
 								{open && (
 									<Panel>
-										<Textarea
+										<BigTextarea
 											placeholder={`${label} 내용을 입력하세요...`}
 											value={freeTexts[key]}
 											onChange={(event) =>
@@ -132,10 +152,9 @@ function FreeTextPage() {
 					})}
 				</Accordion>
 
-				<Hint>
-					<HintTitle>AI 추가 질문</HintTitle>
-					<HintText>“공모전에서 어떤 역할을 맡으셨나요?”</HintText>
-				</Hint>
+				<HintColumn>
+					<AiQuestionCharacter question={openKey ? FALLBACK_QUESTIONS[openKey] : null} />
+				</HintColumn>
 			</Layout>
 		</CreateStepLayout>
 	);
