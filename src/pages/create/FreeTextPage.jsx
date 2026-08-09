@@ -10,15 +10,8 @@ import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 
 const Layout = styled.div`
-	display: grid;
-	grid-template-columns: minmax(0, 900px) 300px;
-	gap: 40px;
-	justify-content: center;
-	align-items: start;
-
-	@media (max-width: 1280px) {
-		grid-template-columns: minmax(0, 900px);
-	}
+	max-width: 1180px;
+	margin: 0 auto;
 `;
 
 // 열린 항목의 입력창을 키우면 아래 분야들이 화면 밖으로 밀리므로,
@@ -71,17 +64,23 @@ const Chevron = styled.span`
 	transition: transform 0.15s;
 `;
 
+// 우파가 지금 쓰고 있는 입력창 바로 옆에 붙도록 패널 안에 함께 둔다.
 const Panel = styled.div`
 	padding: 0 20px 20px;
+	display: flex;
+	align-items: flex-start;
+	gap: 24px;
 `;
 
 const BigTextarea = styled(Textarea)`
+	flex: 1;
+	min-width: 0;
 	min-height: 280px;
 `;
 
 const HintColumn = styled.div`
-	position: sticky;
-	top: 32px;
+	flex: none;
+	width: 260px;
 `;
 
 // 분야마다 우파가 던지는 확장 질문. 백엔드의 확장 질문 생성 API 가 붙으면
@@ -144,16 +143,17 @@ function FreeTextPage() {
 											}
 											aria-label={`${label} 자유 입력`}
 										/>
+										<HintColumn>
+											<AiQuestionCharacter
+												question={FALLBACK_QUESTIONS[key]}
+											/>
+										</HintColumn>
 									</Panel>
 								)}
 							</Section>
 						);
 					})}
 				</Accordion>
-
-				<HintColumn>
-					<AiQuestionCharacter question={openKey ? FALLBACK_QUESTIONS[openKey] : null} />
-				</HintColumn>
 			</Layout>
 		</CreateStepLayout>
 	);

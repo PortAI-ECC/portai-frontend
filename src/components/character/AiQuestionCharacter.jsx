@@ -75,7 +75,7 @@ function AiQuestionCharacter({ question }) {
 			</Bubble>
 
 			<AxolotlPixel
-				size={132}
+				size={104}
 				motion="bounce"
 				animationKey={question ?? 'idle'}
 				title="우파 캐릭터"

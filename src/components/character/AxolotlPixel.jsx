@@ -9,11 +9,12 @@ const float = keyframes`
 	50% { transform: translateY(-6px); }
 `;
 
-// 새 질문을 물어올 때 세 번 붕붕.
+// 새 질문을 물어올 때 세 번. 통통 튀지 않고 위에서 잠깐 머물렀다 천천히 내려온다.
 const bounce = keyframes`
-	0%, 100% { transform: translateY(0); }
-	30% { transform: translateY(-14px); }
-	60% { transform: translateY(-4px); }
+	0% { transform: translateY(0); }
+	30% { transform: translateY(-16px); }
+	55% { transform: translateY(-16px); }
+	100% { transform: translateY(0); }
 `;
 
 const MOTION = {
@@ -22,7 +23,7 @@ const MOTION = {
 		animation: ${float} 2.4s ease-in-out infinite;
 	`,
 	bounce: css`
-		animation: ${bounce} 0.42s ease-in-out 3;
+		animation: ${bounce} 1.1s cubic-bezier(0.4, 0, 0.3, 1) 3;
 	`,
 };
 
@@ -44,7 +45,7 @@ const Svg = styled.svg`
  * motion 이 'bounce' 일 때는 animationKey 가 바뀔 때마다 애니메이션이 다시 돈다.
  */
 function AxolotlPixel({
-	baseColor = '#F6A8C9',
+	baseColor = '#F0A8D8',
 	size = 120,
 	motion = 'none',
 	animationKey,
