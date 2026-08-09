@@ -58,11 +58,51 @@ const ActionButton = styled(Button)`
 	width: 320px;
 `;
 
+// 로그인 상태에도 이 자리를 그대로 차지하게 둬서(내용만 숨김), 두 버튼의
+// 위치가 비로그인 화면과 똑같이 맞춰지게 한다.
+// 직무 추천 API(POST /api/job-postings/recommend 류)가 아직 명세서에
+// 비어 있어서, 자리만 잡아둔 정적 예시다. 스키마 나오면 실제 응답으로 바꾼다.
+const RECOMMENDED_JOBS = [
+	'임베디드 AI 엔지니어',
+	'Edge AI 엔지니어',
+	'AI 펌웨어 엔지니어',
+	'NPU 설계 엔지니어',
+];
+
+const RecommendSection = styled.div`
+	margin-top: 56px;
+	padding-top: 32px;
+	border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const RecommendTitle = styled.p`
+	font-size: 14px;
+	font-weight: 700;
+	margin-bottom: 16px;
+`;
+
+const TagRow = styled.div`
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 10px;
+`;
+
+const Tag = styled.span`
+	font-size: 13px;
+	font-weight: 600;
+	padding: 8px 16px;
+	border-radius: ${({ theme }) => theme.radii.pill};
+	background: ${({ theme }) => theme.colors.primarySoft};
+	color: ${({ theme }) => theme.colors.primary};
+`;
+
 const Note = styled.p`
 	margin-top: auto;
 	padding-top: 40px;
 	font-size: 13px;
 	color: ${({ theme }) => theme.colors.textMuted};
+	visibility: ${({ $hidden }) => ($hidden ? 'hidden' : 'visible')};
 `;
 
 function DeployedPage() {
@@ -105,9 +145,18 @@ function DeployedPage() {
 				)}
 			</Actions>
 
-			{!isLoggedIn && (
-				<Note>로그인하면 만든 포트폴리오를 마이페이지에서 다시 열 수 있어요.</Note>
-			)}
+			<Note $hidden={isLoggedIn}>
+				로그인하면 만든 포트폴리오를 마이페이지에서 다시 열 수 있어요.
+			</Note>
+
+			<RecommendSection>
+				<RecommendTitle>이런 직무는 어때요?</RecommendTitle>
+				<TagRow>
+					{RECOMMENDED_JOBS.map((job) => (
+						<Tag key={job}>#{job}</Tag>
+					))}
+				</TagRow>
+			</RecommendSection>
 		</Wrapper>
 	);
 }

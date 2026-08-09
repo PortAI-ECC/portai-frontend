@@ -243,20 +243,22 @@ function DraftResultPage() {
 				</ModalFooter>
 			</Modal>
 
+			{/* 09.최종 결과물 미리보기와 목적이 같은 '전체화면' 확인이라, 모달 폭도
+			    그에 맞춰 화면 대부분을 채운다. */}
 			<Modal
 				open={fullscreenOpen}
 				onClose={() => setFullscreenOpen(false)}
 				title="임시 결과 사이트 미리보기 (전체화면)"
-				width="1160px"
+				width="94vw"
 			>
 				<Preview>
-					<Block $height="90px" />
-					<BlockRow>
-						<Block $height="160px" />
-						<Block $height="160px" />
-					</BlockRow>
-					<Block $height="200px" />
 					<Block $height="160px" />
+					<BlockRow>
+						<Block $height="240px" />
+						<Block $height="240px" />
+					</BlockRow>
+					<Block $height="300px" />
+					<Block $height="240px" />
 				</Preview>
 			</Modal>
 
