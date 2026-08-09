@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import styled from '@emotion/styled';
 import { keyframes } from '@emotion/react';
+import AxolotlPixel from '../character/AxolotlPixel';
 
 const Backdrop = styled.div`
 	position: fixed;
@@ -43,11 +44,27 @@ const Percent = styled.p`
 	margin-bottom: 20px;
 `;
 
+// 우파가 바 위를 떠다녀야 해서 트랙을 기준점으로 삼는다.
+const TrackArea = styled.div`
+	position: relative;
+	padding-top: 44px;
+`;
+
 const Track = styled.div`
 	height: 8px;
 	border-radius: 999px;
 	background: ${({ theme }) => theme.colors.primarySoft};
 	overflow: hidden;
+`;
+
+// 채워진 부분의 오른쪽 끝을 따라간다.
+const Rider = styled.div`
+	position: absolute;
+	top: 0;
+	left: ${({ $value }) => $value}%;
+	transform: translateX(-50%);
+	transition: left 0.4s ease;
+	pointer-events: none;
 `;
 
 const shimmer = keyframes`
@@ -76,15 +93,21 @@ function ProgressOverlay({ open, value = 0, title = '포트폴리오를 생성�
 				<Title>{title}</Title>
 				<Message>{message}</Message>
 				<Percent>{percent}%</Percent>
-				<Track>
-					<Bar
-						$value={percent}
-						role="progressbar"
-						aria-valuenow={percent}
-						aria-valuemin={0}
-						aria-valuemax={100}
-					/>
-				</Track>
+
+				<TrackArea>
+					<Rider $value={percent} aria-hidden="true">
+						<AxolotlPixel size={40} motion="float" title="" />
+					</Rider>
+					<Track>
+						<Bar
+							$value={percent}
+							role="progressbar"
+							aria-valuenow={percent}
+							aria-valuemin={0}
+							aria-valuemax={100}
+						/>
+					</Track>
+				</TrackArea>
 			</Panel>
 		</Backdrop>,
 		document.body,

@@ -56,16 +56,13 @@ const Empty = styled.p`
 	color: ${({ theme }) => theme.colors.textMuted};
 `;
 
-const Name = styled.p`
-	font-size: 12px;
-	color: ${({ theme }) => theme.colors.textMuted};
-`;
-
 /**
  * 자유 텍스트 입력 화면의 AI 추가 질문 담당 캐릭터.
  * 와이어프레임(5. 자유텍스트 입력)의 '우파(픽셀)' 자리를 채운다.
+ *
+ * 질문이 바뀔 때마다 animationKey 가 바뀌어 세 번 붕붕 뛴다.
  */
-function AiQuestionCharacter({ question, name = '우파' }) {
+function AiQuestionCharacter({ question }) {
 	return (
 		<Wrapper>
 			<Bubble>
@@ -77,8 +74,12 @@ function AiQuestionCharacter({ question, name = '우파' }) {
 				)}
 			</Bubble>
 
-			<AxolotlPixel size={132} title={`${name} 캐릭터`} />
-			<Name>{name}</Name>
+			<AxolotlPixel
+				size={132}
+				motion="bounce"
+				animationKey={question ?? 'idle'}
+				title="우파 캐릭터"
+			/>
 		</Wrapper>
 	);
 }
