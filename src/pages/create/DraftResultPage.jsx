@@ -5,6 +5,8 @@ import CreateStepLayout from '../../components/layout/CreateStepLayout';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
+import ProgressOverlay from '../../components/common/ProgressOverlay';
+import { useGenerationProgress } from '../../hooks/useGenerationProgress';
 import Field from '../../components/common/Field';
 import Textarea from '../../components/common/Textarea';
 import { ROUTES } from '../../constants/routes';
@@ -13,12 +15,18 @@ import { useCreateFlowStore } from '../../store/createFlowStore';
 const Columns = styled.div`
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-	gap: 40px;
+	gap: 32px;
 	align-items: start;
 
 	@media (max-width: 1100px) {
 		grid-template-columns: 1fr;
 	}
+`;
+
+const FooterRight = styled.div`
+	width: 100%;
+	display: flex;
+	justify-content: flex-end;
 `;
 
 const PanelHead = styled.div`
@@ -44,7 +52,7 @@ const Preview = styled.div`
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
-	min-height: 620px;
+	min-height: 680px;
 `;
 
 const Block = styled.div`
@@ -115,6 +123,7 @@ function DraftResultPage() {
 	);
 	const [templateModalOpen, setTemplateModalOpen] = useState(false);
 	const [fullscreenOpen, setFullscreenOpen] = useState(false);
+	const progress = useGenerationProgress(() => navigate(ROUTES.CREATE_PREVIEW));
 
 	const handleDraftChange = (key) => (event) => {
 		setDrafts((prev) => ({ ...prev, [key]: event.target.value }));
@@ -125,9 +134,11 @@ function DraftResultPage() {
 			step={4}
 			title="임시 결과"
 			footer={
-				<Button size="lg" onClick={() => navigate(ROUTES.CREATE_PREVIEW)}>
-					확인
-				</Button>
+				<FooterRight>
+					<Button size="lg" onClick={progress.start} disabled={progress.running}>
+						생성하기
+					</Button>
+				</FooterRight>
 			}
 		>
 			<Columns>
@@ -225,6 +236,12 @@ function DraftResultPage() {
 					<Block $height="160px" />
 				</Preview>
 			</Modal>
+
+			<ProgressOverlay
+				open={progress.running}
+				value={progress.value}
+				message={progress.message}
+			/>
 		</CreateStepLayout>
 	);
 }
