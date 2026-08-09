@@ -44,10 +44,10 @@ const Percent = styled.p`
 	margin-bottom: 20px;
 `;
 
-// 우파가 바 위를 떠다녀야 해서 트랙을 기준점으로 삼는다.
+// 퍼센트 위치는 그대로 두고, 우파와 바가 뜰 자리를 아래로 더 벌린다.
 const TrackArea = styled.div`
 	position: relative;
-	padding-top: 44px;
+	padding-top: 68px;
 `;
 
 const Track = styled.div`

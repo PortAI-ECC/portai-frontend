@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { CREATE_STEPS } from '../../constants/routes';
+import { useCreateFlowStore } from '../../store/createFlowStore';
 
 const Nav = styled.nav`
 	display: grid;
@@ -64,22 +66,30 @@ const StepButton = styled.button`
 
 function StepProgress({ current }) {
 	const navigate = useNavigate();
+	const maxVisitedStep = useCreateFlowStore((state) => state.maxVisitedStep);
+	const visitStep = useCreateFlowStore((state) => state.visitStep);
+
+	useEffect(() => {
+		visitStep(current);
+	}, [current, visitStep]);
 
 	return (
 		<Nav aria-label="포트폴리오 생성 단계">
 			{CREATE_STEPS.map((step, index) => {
 				const done = index < current;
 				const active = index === current;
+				// 한 번이라도 가본 단계면 앞쪽으로도 건너뛸 수 있다.
+				const reachable = index !== current && index <= Math.max(current, maxVisitedStep);
 
 				return (
 					<Step key={step.path} $done={done}>
 						<StepButton
 							type="button"
-							$clickable={done}
-							disabled={!done}
+							$clickable={reachable}
+							disabled={!reachable}
 							aria-current={active ? 'step' : undefined}
-							aria-label={`${index + 1}. ${step.label}${done ? ' (이 단계로 돌아가기)' : ''}`}
-							onClick={() => done && navigate(step.path)}
+							aria-label={`${index + 1}. ${step.label}${reachable ? ' (이 단계로 이동)' : ''}`}
+							onClick={() => reachable && navigate(step.path)}
 						>
 							<Label $active={active}>
 								{index + 1}. {step.label}

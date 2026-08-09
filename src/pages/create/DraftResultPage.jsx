@@ -6,21 +6,45 @@ import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import ProgressOverlay from '../../components/common/ProgressOverlay';
+import { FullscreenIcon, SwapCardsIcon } from '../../components/common/icons';
 import { useGenerationProgress } from '../../hooks/useGenerationProgress';
+import { useDelayedVisible } from '../../hooks/useDelayedVisible';
 import Field from '../../components/common/Field';
 import Textarea from '../../components/common/Textarea';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 
+// align-items 를 stretch 로 둬 두 패널의 세로 길이를 맞춘다.
 const Columns = styled.div`
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 32px;
-	align-items: start;
+	align-items: stretch;
 
 	@media (max-width: 1100px) {
 		grid-template-columns: 1fr;
 	}
+`;
+
+// 와이어프레임 7 의 겹친 사각형 스왑 아이콘.
+const IconButton = styled.button`
+	width: 36px;
+	height: 36px;
+	display: grid;
+	place-items: center;
+	border-radius: ${({ theme }) => theme.radii.sm};
+	color: ${({ theme }) => theme.colors.text};
+	transition: background 0.15s;
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.6);
+	}
+`;
+
+const IconRow = styled.div`
+	display: flex;
+	align-items: center;
+	gap: 16px;
 `;
 
 const PanelHead = styled.div`
@@ -115,9 +139,14 @@ function DraftResultPage() {
 	const [drafts, setDrafts] = useState(() =>
 		Object.fromEntries(SECTIONS.map(({ key }) => [key, ''])),
 	);
-	const [templateModalOpen, setTemplateModalOpen] = useState(false);
+	// 채용 공고 단계에서 넘어오면 템플릿부터 고르게 한다.
+	// 한 번 닫은 뒤에는 헤더의 아이콘으로 다시 연다.
+	const [templateModalOpen, setTemplateModalOpen] = useState(() => templateId === null);
 	const [fullscreenOpen, setFullscreenOpen] = useState(false);
 	const progress = useGenerationProgress(() => navigate(ROUTES.CREATE_PREVIEW));
+	// 요청이 빨리 끝나면 로딩 화면을 아예 띄우지 않는다. 화면/단계가 아니라
+	// 실제로 걸린 시간(400ms)으로만 판단하고, 한 번 뜨면 500ms는 유지해 깜빡임을 막는다.
+	const showProgressOverlay = useDelayedVisible(progress.running);
 
 	const handleDraftChange = (key) => (event) => {
 		setDrafts((prev) => ({ ...prev, [key]: event.target.value }));
@@ -156,23 +185,24 @@ function DraftResultPage() {
 				<Card>
 					<PanelHead>
 						<PanelTitle>임시 결과 사이트 미리보기</PanelTitle>
-						<div>
-							<Button
-								variant="secondary"
-								size="sm"
+						<IconRow>
+							<IconButton
+								type="button"
 								onClick={() => setTemplateModalOpen(true)}
+								aria-label="템플릿 변경"
+								title="템플릿 변경"
 							>
-								템플릿 변경
-							</Button>{' '}
-							<Button
-								variant="secondary"
-								size="sm"
+								<SwapCardsIcon />
+							</IconButton>
+							<IconButton
+								type="button"
 								onClick={() => setFullscreenOpen(true)}
 								aria-label="전체화면 미리보기"
+								title="전체화면 미리보기"
 							>
-								⛶
-							</Button>
-						</div>
+								<FullscreenIcon />
+							</IconButton>
+						</IconRow>
 					</PanelHead>
 
 					<Preview>
@@ -231,7 +261,7 @@ function DraftResultPage() {
 			</Modal>
 
 			<ProgressOverlay
-				open={progress.running}
+				open={showProgressOverlay}
 				value={progress.value}
 				message={progress.message}
 			/>
