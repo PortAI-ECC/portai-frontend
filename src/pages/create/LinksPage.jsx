@@ -201,9 +201,10 @@ function LinksPage() {
 			step={1}
 			title="URL 입력"
 			description="Velog / GitHub / Notion 등 프로젝트·블로그 링크를 추가하세요"
+			backTo={ROUTES.CREATE_BASIC}
 			footer={
 				<Button size="lg" onClick={() => navigate(ROUTES.CREATE_TEXT)}>
-					다음
+					{links.length === 0 ? '건너뛰기' : '다음'}
 				</Button>
 			}
 		>

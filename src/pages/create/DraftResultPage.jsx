@@ -23,12 +23,6 @@ const Columns = styled.div`
 	}
 `;
 
-const FooterRight = styled.div`
-	width: 100%;
-	display: flex;
-	justify-content: flex-end;
-`;
-
 const PanelHead = styled.div`
 	display: flex;
 	align-items: center;
@@ -133,12 +127,11 @@ function DraftResultPage() {
 		<CreateStepLayout
 			step={4}
 			title="임시 결과"
+			backTo={ROUTES.CREATE_JOB}
 			footer={
-				<FooterRight>
-					<Button size="lg" onClick={progress.start} disabled={progress.running}>
-						생성하기
-					</Button>
-				</FooterRight>
+				<Button size="lg" onClick={progress.start} disabled={progress.running}>
+					생성하기
+				</Button>
 			}
 		>
 			<Columns>

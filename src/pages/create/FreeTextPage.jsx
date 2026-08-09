@@ -102,21 +102,20 @@ function FreeTextPage() {
 
 	const [openKey, setOpenKey] = useState(RECORD_CATEGORIES[0].key);
 
+	// 아무것도 안 썼으면 버튼이 '건너뛰기', 한 글자라도 있으면 '다음'.
+	const hasAnyText = Object.values(freeTexts).some((value) => value.trim().length > 0);
+
 	return (
 		<CreateStepLayout
 			step={2}
 			title="자유 텍스트 입력"
 			description="분야별 토글을 열어 자유롭게 작성해 주세요"
 			align="center"
+			backTo={ROUTES.CREATE_LINKS}
 			footer={
-				<>
-					<Button size="lg" onClick={() => navigate(ROUTES.CREATE_JOB)}>
-						다음
-					</Button>
-					<Button variant="ghost" onClick={() => navigate(ROUTES.CREATE_JOB)}>
-						건너뛰기 →
-					</Button>
-				</>
+				<Button size="lg" onClick={() => navigate(ROUTES.CREATE_JOB)}>
+					{hasAnyText ? '다음' : '건너뛰기'}
+				</Button>
 			}
 		>
 			<Layout>

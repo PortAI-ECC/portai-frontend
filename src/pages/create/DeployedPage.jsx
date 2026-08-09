@@ -5,9 +5,15 @@ import Button from '../../components/common/Button';
 import { ROUTES } from '../../constants/routes';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
 
+// 이력서 버튼이 화면 세로 2/3 쯤, 안내 문구가 최하단에 오도록
+// 화면 높이를 채운 뒤 남는 공간을 URL 아래에 몰아준다.
 const Wrapper = styled.div`
 	max-width: 900px;
-	margin: 80px auto 0;
+	min-height: calc(100vh - ${({ theme }) => theme.layout.headerHeight} - 112px);
+	margin: 0 auto;
+	padding-top: 6vh;
+	display: flex;
+	flex-direction: column;
 	text-align: center;
 `;
 
@@ -17,11 +23,11 @@ const Title = styled.h1`
 	margin-bottom: 40px;
 `;
 
-// URL 줄과 아래 버튼 사이는 버튼 하나 폭(260px)만큼 띄운다.
+// URL 줄 아래는 남는 세로 공간을 전부 비운다.
 const UrlRow = styled.div`
 	display: flex;
 	gap: 16px;
-	margin-bottom: 260px;
+	margin-bottom: auto;
 `;
 
 const UrlBox = styled.p`
@@ -48,6 +54,8 @@ const Actions = styled.div`
 `;
 
 const Note = styled.p`
+	margin-top: auto;
+	padding-top: 40px;
 	font-size: 13px;
 	color: ${({ theme }) => theme.colors.textMuted};
 `;
@@ -90,10 +98,13 @@ function DeployedPage() {
 						<Button variant="secondary" size="lg" onClick={() => navigate(ROUTES.HOME)}>
 							로그인으로 결과 저장하기
 						</Button>
-						<Note>로그인하면 만든 포트폴리오를 마이페이지에서 다시 열 수 있어요.</Note>
 					</>
 				)}
 			</Actions>
+
+			{!isLoggedIn && (
+				<Note>로그인하면 만든 포트폴리오를 마이페이지에서 다시 열 수 있어요.</Note>
+			)}
 		</Wrapper>
 	);
 }

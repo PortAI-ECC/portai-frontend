@@ -59,20 +59,25 @@ function JobPostingPage() {
 	const jobPosting = useCreateFlowStore((state) => state.jobPosting);
 	const setJobPosting = useCreateFlowStore((state) => state.setJobPosting);
 
+	// 선택한 방식에 실제 입력이 있을 때만 '분석 후 다음'으로 바뀐다.
+	const hasInput = Boolean(
+		{
+			url: jobPosting.url.trim(),
+			text: jobPosting.text.trim(),
+			file: jobPosting.fileName,
+		}[jobPosting.mode],
+	);
+
 	return (
 		<CreateStepLayout
 			step={3}
 			title="채용 공고 입력 (선택)"
 			description="지원하려는 채용 공고를 링크·텍스트·사진/PDF 중 편한 방식으로 입력하세요"
+			backTo={ROUTES.CREATE_TEXT}
 			footer={
-				<>
-					<Button variant="ghost" onClick={() => navigate(ROUTES.CREATE_DRAFT)}>
-						건너뛰기 →
-					</Button>
-					<Button size="lg" onClick={() => navigate(ROUTES.CREATE_DRAFT)}>
-						분석 후 다음
-					</Button>
-				</>
+				<Button size="lg" onClick={() => navigate(ROUTES.CREATE_DRAFT)}>
+					{hasInput ? '분석 후 다음' : '건너뛰기'}
+				</Button>
 			}
 		>
 			<Tabs role="tablist">
