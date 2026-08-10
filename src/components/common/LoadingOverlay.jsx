@@ -42,7 +42,7 @@ const Ring = styled.div`
 const Track = styled.div`
 	position: absolute;
 	inset: 0;
-	border: 4px solid ${({ theme }) => theme.colors.primarySoft};
+	border: 7px solid ${({ theme }) => theme.colors.primarySoft};
 	border-top-color: ${({ theme }) => theme.colors.primary};
 	border-radius: 50%;
 	animation: ${spin} 0.9s linear infinite;
