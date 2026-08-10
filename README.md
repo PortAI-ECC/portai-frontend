@@ -8,7 +8,7 @@ Velog/Notion 등의 기술블로그, GitHub 프로젝트, 활동 이력 등을 �
 
 ## 🌐 배포
 
-- Netlify배포 : https://ecc-portai.netlify.app/
+- Netlify배포 : https://ecc-portai.netlify.app
 
 - [![Netlify Status](https://api.netlify.com/api/v1/badges/cd9665ad-cf32-4f9e-a6df-52a131422dce/deploy-status)](https://app.netlify.com/projects/ecc-portai/deploys)
 
