@@ -5,6 +5,8 @@ import CreateStepLayout from '../../components/layout/CreateStepLayout';
 import Input from '../../components/common/Input';
 import Textarea from '../../components/common/Textarea';
 import Button from '../../components/common/Button';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
+import { useDelayedVisible } from '../../hooks/useDelayedVisible';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
@@ -82,6 +84,9 @@ function JobPostingPage() {
 	const fileRef = useRef(null);
 	const [analyzing, setAnalyzing] = useState(false);
 	const [error, setError] = useState('');
+	// 분석은 서버가 접수만 하고 나중에 끝나 몇 초씩 걸린다. 얼마나 남았는지는
+	// 알 수 없어 진행바 대신 공용 로딩 모달을 쓴다.
+	const showLoading = useDelayedVisible(analyzing);
 
 	// 선택한 방식에 실제 입력이 있을 때만 '분석 후 다음'으로 바뀐다.
 	const hasInput = Boolean(
@@ -150,6 +155,8 @@ function JobPostingPage() {
 				</Button>
 			}
 		>
+			<LoadingOverlay open={showLoading} message="채용 공고를 읽고 있어요" />
+
 			<Tabs role="tablist">
 				{MODES.map(({ key, label }) => (
 					<Tab

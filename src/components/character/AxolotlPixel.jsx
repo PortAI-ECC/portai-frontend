@@ -17,13 +17,25 @@ const bounce = keyframes`
 	100% { transform: translateY(0); }
 `;
 
+// 로딩 원 안에서 제자리 진동. 뜨는 게 아니라 몸을 짧게 떠는 느낌이라
+// 이동 폭을 아주 작게 두고 좌우로도 살짝 흔든다.
+const hum = keyframes`
+	0%, 100% { transform: translate(0, 0); }
+	25% { transform: translate(-1px, -1.5px); }
+	50% { transform: translate(0, -2.5px); }
+	75% { transform: translate(1px, -1.5px); }
+`;
+
 const MOTION = {
 	none: null,
 	float: css`
 		animation: ${float} 2.4s ease-in-out infinite;
 	`,
 	bounce: css`
-		animation: ${bounce} 1.1s cubic-bezier(0.4, 0, 0.3, 1) 3;
+		animation: ${bounce} 0.75s cubic-bezier(0.4, 0, 0.3, 1) 2;
+	`,
+	hum: css`
+		animation: ${hum} 0.9s ease-in-out infinite;
 	`,
 };
 
