@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Button from '../common/Button';
 import Logo from './Logo';
-import { ROUTES } from '../../constants/routes';
+import { CREATE_STEPS, ROUTES } from '../../constants/routes';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
 import { logOut } from '../../api/auth';
 
@@ -60,6 +60,9 @@ const NavLink = styled.button`
 	}
 `;
 
+// 진행바가 도는 5단계(기본 정보 입력 ~ 임시 결과).
+const WIZARD_PATHS = CREATE_STEPS.map(({ path }) => path);
+
 function Header() {
 	const navigate = useNavigate();
 	const { pathname } = useLocation();
@@ -84,12 +87,24 @@ function Header() {
 	// 텍스트 링크로 두고, 나머지 화면에서는 눈에 띄는 버튼으로 올린다.
 	const isHome = pathname === ROUTES.HOME;
 	const isSignUp = pathname === ROUTES.SIGNUP;
+	const isLogin = pathname === ROUTES.LOGIN;
+
+	// 위자드 5단계는 진행 자체가 주인공이라, 헤더는 홈과 같은 조용한 텍스트로 둔다.
+	const isWizard = WIZARD_PATHS.includes(pathname);
+	// 최종 결과물은 결과만 보는 화면이라 헤더에 아무 액션도 두지 않는다.
+	const isFinalPreview = pathname === ROUTES.CREATE_PREVIEW;
+
+	// 로그인 상태의 로그아웃만 조용한 텍스트로 둔다. 비로그인의 로그인 버튼은
+	// 눌러 줬으면 하는 버튼이라 눈에 띄는 그라데이션 그대로다.
+	const quiet = isHome || isWizard;
 
 	// 로그인 상태에서는 헤더에 액션을 하나만 둔다 — 로그아웃.
 	// 마이페이지로 가는 길은 홈의 프로필 카드 쪽에 따로 있다.
 	const renderAction = () => {
+		if (isFinalPreview) return null;
+
 		if (isLoggedIn) {
-			return isHome ? (
+			return quiet ? (
 				<NavLink type="button" onClick={handleSignOut}>
 					로그아웃
 				</NavLink>
@@ -98,9 +113,18 @@ function Header() {
 			);
 		}
 
-		// 회원가입 화면에서 회원가입 버튼은 의미가 없으니 홈으로 돌아가는 버튼을 준다.
-		if (isSignUp) {
+		// 로그인·회원가입 화면에서 같은 곳으로 가는 버튼은 의미가 없으니 홈으로 보낸다.
+		if (isSignUp || isLogin) {
 			return <Button onClick={() => navigate(ROUTES.HOME)}>홈</Button>;
+		}
+
+		// 위자드 도중이면 회원가입보다 로그인이 먼저다. 로그인 뒤 하던 자리로 돌아온다.
+		if (isWizard) {
+			return (
+				<Button onClick={() => navigate(ROUTES.LOGIN, { state: { from: pathname } })}>
+					로그인
+				</Button>
+			);
 		}
 
 		return isHome ? (

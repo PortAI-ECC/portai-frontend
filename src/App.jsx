@@ -6,6 +6,7 @@ import AppLayout from './components/layout/AppLayout';
 import PrivateRoute from './routes/PrivateRoute';
 import { ROUTES } from './constants/routes';
 import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import MyPage from './pages/MyPage';
 import PortfolioPage from './pages/PortfolioPage';
@@ -29,6 +30,7 @@ function App() {
 
 					<Route element={<AppLayout />}>
 						<Route path={ROUTES.HOME} element={<HomePage />} />
+						<Route path={ROUTES.LOGIN} element={<LoginPage />} />
 						<Route path={ROUTES.SIGNUP} element={<SignUpPage />} />
 
 						<Route path={ROUTES.CREATE_BASIC} element={<BasicInfoPage />} />
