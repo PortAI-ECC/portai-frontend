@@ -22,6 +22,11 @@ const percentOf = (generation) => {
 	return Math.max(5, Math.round((done / results.length) * 100));
 };
 
+// 결과물 4종을 LLM 이 만드는 구간이라 분 단위로 걸린다. pollUntil 기본값(90초)
+// 으로는 정상 생성 중에도 끊겨 실패로 보이므로 여기서만 넉넉히 늘려 둔다.
+// (백엔드에 실제 소요 시간을 확인하면 그 값에 맞춘다.)
+const GENERATION_TIMEOUT = 5 * 60 * 1000;
+
 const stageMessageOf = (generation) => {
 	const pending = generation?.results?.find((result) => result.status === 'IN_PROGRESS');
 	return pending ? (STAGE_MESSAGE[pending.type] ?? '결과물을 만드는 중') : '마무리하는 중';
@@ -72,7 +77,7 @@ export function useGenerationProgress() {
 				// 기본 2초로 물어보면 결과물이 두세 개씩 한꺼번에 끝나 버려서
 				// 진행 문구가 거의 안 바뀐다. 이 화면은 사람이 보고 있는 동안만
 				// 도는 폴링이라 조금 더 자주 물어 단계가 넘어가는 게 보이게 한다.
-				{ interval: 1000, signal: controller.signal },
+				{ interval: 1000, timeout: GENERATION_TIMEOUT, signal: controller.signal },
 			);
 
 			setValue(100);
