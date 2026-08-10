@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import CreateStepLayout from '../../components/layout/CreateStepLayout';
@@ -6,6 +7,10 @@ import Textarea from '../../components/common/Textarea';
 import Button from '../../components/common/Button';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
+import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
+import { analyzeByFile, analyzeByUrl, getJobPosting } from '../../api/jobPostings';
+import { isSettled, pollUntil } from '../../api/poll';
+import { messageOf } from '../../api/client';
 
 const Tabs = styled.div`
 	display: flex;
@@ -48,6 +53,18 @@ const TallTextarea = styled(Textarea)`
 	min-height: 340px;
 `;
 
+const ErrorText = styled.p`
+	margin-top: 16px;
+	font-size: 13px;
+	color: ${({ theme }) => theme.colors.danger};
+`;
+
+const HelperText = styled.p`
+	margin-top: 16px;
+	font-size: 13px;
+	color: ${({ theme }) => theme.colors.textMuted};
+`;
+
 const MODES = [
 	{ key: 'url', label: '링크로 입력' },
 	{ key: 'text', label: '텍스트 붙여넣기' },
@@ -56,8 +73,15 @@ const MODES = [
 
 function JobPostingPage() {
 	const navigate = useNavigate();
+	const isLoggedIn = useAuthStore(selectIsLoggedIn);
 	const jobPosting = useCreateFlowStore((state) => state.jobPosting);
 	const setJobPosting = useCreateFlowStore((state) => state.setJobPosting);
+	const setJobPostingId = useCreateFlowStore((state) => state.setJobPostingId);
+
+	// File 객체는 직렬화가 안 돼 store 에 못 넣는다. 업로드에 쓸 실물은 여기 붙잡아 둔다.
+	const fileRef = useRef(null);
+	const [analyzing, setAnalyzing] = useState(false);
+	const [error, setError] = useState('');
 
 	// 선택한 방식에 실제 입력이 있을 때만 '분석 후 다음'으로 바뀐다.
 	const hasInput = Boolean(
@@ -68,6 +92,52 @@ function JobPostingPage() {
 		}[jobPosting.mode],
 	);
 
+	// 명세서에 있는 분석 엔드포인트는 URL 과 PDF 두 가지뿐이다.
+	// 텍스트 붙여넣기는 보낼 곳이 없어 입력값만 들고 다음 단계로 넘어간다.
+	const canAnalyze = isLoggedIn && hasInput && jobPosting.mode !== 'text';
+
+	const handleNext = async () => {
+		if (!canAnalyze) {
+			navigate(ROUTES.CREATE_DRAFT);
+			return;
+		}
+
+		setError('');
+		setAnalyzing(true);
+
+		try {
+			const accepted =
+				jobPosting.mode === 'url'
+					? await analyzeByUrl(jobPosting.url.trim())
+					: await analyzeByFile(fileRef.current);
+
+			const id = accepted.jobPostingId;
+			setJobPostingId(id);
+
+			// 분석은 접수(PENDING)만 먼저 오고 결과는 나중에 채워진다.
+			const finished = await pollUntil(
+				() => getJobPosting(id),
+				(data) => isSettled(data.status),
+			);
+
+			if (finished.status === 'FAILED') {
+				setError(finished.failReason ?? '채용 공고를 분석하지 못했어요. 다시 시도해 주세요.');
+				return;
+			}
+
+			navigate(ROUTES.CREATE_DRAFT);
+		} catch (requestError) {
+			// 분석이 실패해도 입력한 내용은 남으니 건너뛸 수 있게 안내만 한다.
+			setError(
+				requestError?.message === 'TIMEOUT'
+					? '분석이 오래 걸리고 있어요. 잠시 후 다시 시도해 주세요.'
+					: messageOf(requestError, '채용 공고 분석에 실패했어요.'),
+			);
+		} finally {
+			setAnalyzing(false);
+		}
+	};
+
 	return (
 		<CreateStepLayout
 			step={3}
@@ -75,8 +145,8 @@ function JobPostingPage() {
 			description="지원하려는 채용 공고를 링크·텍스트·사진/PDF 중 편한 방식으로 입력하세요"
 			backTo={ROUTES.CREATE_TEXT}
 			footer={
-				<Button size="lg" onClick={() => navigate(ROUTES.CREATE_DRAFT)}>
-					{hasInput ? '분석 후 다음' : '건너뛰기'}
+				<Button size="lg" onClick={handleNext} disabled={analyzing}>
+					{analyzing ? '분석 중...' : canAnalyze ? '분석 후 다음' : hasInput ? '다음' : '건너뛰기'}
 				</Button>
 			}
 		>
@@ -122,11 +192,25 @@ function JobPostingPage() {
 					<HiddenInput
 						type="file"
 						accept="image/*,application/pdf"
-						onChange={(event) =>
-							setJobPosting({ fileName: event.target.files?.[0]?.name ?? '' })
-						}
+						onChange={(event) => {
+							const file = event.target.files?.[0] ?? null;
+							fileRef.current = file;
+							setJobPosting({ fileName: file?.name ?? '' });
+						}}
 					/>
 				</DropZone>
+			)}
+
+			{error && <ErrorText role="alert">{error}</ErrorText>}
+
+			{!error && jobPosting.mode === 'text' && hasInput && (
+				<HelperText>
+					텍스트 붙여넣기는 아직 분석 API가 없어 입력한 내용만 다음 단계로 전달돼요.
+				</HelperText>
+			)}
+
+			{!error && !isLoggedIn && hasInput && (
+				<HelperText>로그인하면 채용 공고를 분석해 결과물에 반영할 수 있어요.</HelperText>
 			)}
 		</CreateStepLayout>
 	);

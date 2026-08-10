@@ -8,6 +8,8 @@ import { RECORD_CATEGORIES } from '../constants/recordCategories';
 import { ROUTES } from '../constants/routes';
 import { getGenerations } from '../api/generations';
 import { RECORD_APIS } from '../api/records';
+import { projectsApi } from '../api/projects';
+import RecordManagerModal from '../components/record/RecordManagerModal';
 
 // 와이어프레임상 '+ 새로 만들기'는 마이페이지 제목줄 오른쪽에만 있다.
 const TitleRow = styled.div`
@@ -32,6 +34,13 @@ const Columns = styled.div`
 	@media (max-width: 1100px) {
 		grid-template-columns: 1fr;
 	}
+`;
+
+// 왼쪽 열에 활동이력·프로젝트 두 카드를 세로로 쌓는다.
+const Stack = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 40px;
 `;
 
 const SectionTitle = styled.h2`
@@ -119,6 +128,7 @@ function MyPage() {
 	const [generations, setGenerations] = useState(null);
 	const [failed, setFailed] = useState(false);
 	const [counts, setCounts] = useState({});
+	const [openCategory, setOpenCategory] = useState(null);
 
 	useEffect(() => {
 		getGenerations()
@@ -130,9 +140,14 @@ function MyPage() {
 	useEffect(() => {
 		let cancelled = false;
 
+		const sources = [
+			...RECORD_CATEGORIES.map(({ key }) => [key, RECORD_APIS[key]]),
+			['projects', projectsApi],
+		];
+
 		Promise.all(
-			RECORD_CATEGORIES.map(({ key }) =>
-				RECORD_APIS[key]
+			sources.map(([key, api]) =>
+				api
 					.listItems()
 					.then((items) => [key, items.length])
 					.catch(() => [key, null]),
@@ -154,23 +169,50 @@ function MyPage() {
 			</TitleRow>
 
 			<Columns>
-				<Card>
-					<SectionTitle>활동이력 관리</SectionTitle>
-					<CategoryGrid>
-						{RECORD_CATEGORIES.map(({ key, label }) => (
-							<CategoryCard key={key} type="button">
-								<CategoryName>{label}</CategoryName>
+				<Stack>
+					<Card>
+						<SectionTitle>활동이력 관리</SectionTitle>
+						<CategoryGrid>
+							{RECORD_CATEGORIES.map(({ key, label }) => (
+								<CategoryCard
+									key={key}
+									type="button"
+									onClick={() => setOpenCategory({ key, label })}
+								>
+									<CategoryName>{label}</CategoryName>
+									<CategoryCount>
+										{counts[key] === undefined
+											? '불러오는 중...'
+											: counts[key] === null
+												? '불러오지 못함'
+												: `${counts[key]}개 항목`}
+									</CategoryCount>
+								</CategoryCard>
+							))}
+						</CategoryGrid>
+					</Card>
+
+					<Card>
+						<SectionTitle>프로젝트 관리</SectionTitle>
+						<CategoryGrid>
+							<CategoryCard
+								type="button"
+								onClick={() =>
+									setOpenCategory({ key: 'projects', label: '프로젝트' })
+								}
+							>
+								<CategoryName>프로젝트</CategoryName>
 								<CategoryCount>
-									{counts[key] === undefined
+									{counts.projects === undefined
 										? '불러오는 중...'
-										: counts[key] === null
+										: counts.projects === null
 											? '불러오지 못함'
-											: `${counts[key]}개 항목`}
+											: `${counts.projects}개 항목`}
 								</CategoryCount>
 							</CategoryCard>
-						))}
-					</CategoryGrid>
-				</Card>
+						</CategoryGrid>
+					</Card>
+				</Stack>
 
 				<Card>
 					<SectionTitle>생성한 사이트 관리</SectionTitle>
@@ -199,6 +241,16 @@ function MyPage() {
 					)}
 				</Card>
 			</Columns>
+
+			{openCategory && (
+				<RecordManagerModal
+					open
+					categoryKey={openCategory.key}
+					title={openCategory.label}
+					onClose={() => setOpenCategory(null)}
+					onChanged={(key, count) => setCounts((prev) => ({ ...prev, [key]: count }))}
+				/>
+			)}
 		</>
 	);
 }

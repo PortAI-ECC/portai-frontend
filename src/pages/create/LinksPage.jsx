@@ -8,7 +8,13 @@ import Spinner from '../../components/common/Spinner';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
-import { createIntegration, deleteIntegration, getIntegrations } from '../../api/integrations';
+import {
+	createIntegration,
+	deleteIntegration,
+	getIntegrations,
+	getSyncStatus,
+	syncIntegration,
+} from '../../api/integrations';
 import { messageOf } from '../../api/client';
 
 const AddRow = styled.form`
@@ -110,6 +116,8 @@ const STATUS_LABEL = {
 	FAILED: '실패',
 };
 
+const isCollecting = (status) => status === 'PENDING' || status === 'IN_PROGRESS';
+
 function LinksPage() {
 	const navigate = useNavigate();
 	const isLoggedIn = useAuthStore(selectIsLoggedIn);
@@ -143,6 +151,41 @@ function LinksPage() {
 			.catch(() => setError('연동 목록을 불러오지 못했어요.'))
 			.finally(() => setLoading(false));
 	}, [isLoggedIn, setLinks]);
+
+	// 수집 중인 항목이 하나라도 있으면 끝날 때까지 상태를 물어본다.
+	// 의존성에 배열을 그대로 넣으면 매 렌더 새 배열이라 문자열 키로 바꿔 비교한다.
+	const collectingKey = links
+		.filter((link) => isCollecting(link.status))
+		.map((link) => link.id)
+		.join(',');
+
+	useEffect(() => {
+		if (!isLoggedIn || !collectingKey) return undefined;
+
+		const ids = collectingKey.split(',');
+
+		const timer = setInterval(async () => {
+			const settled = await Promise.all(
+				ids.map((id) =>
+					getSyncStatus(id)
+						.then((data) => [id, data.status])
+						.catch(() => null),
+				),
+			);
+			const nextStatus = Object.fromEntries(settled.filter(Boolean));
+
+			// 폴링 중에 목록이 바뀌었을 수 있어 최신 상태를 스토어에서 다시 읽는다.
+			setLinks(
+				useCreateFlowStore
+					.getState()
+					.links.map((link) =>
+						nextStatus[link.id] ? { ...link, status: nextStatus[link.id] } : link,
+					),
+			);
+		}, 2000);
+
+		return () => clearInterval(timer);
+	}, [isLoggedIn, collectingKey, setLinks]);
 
 	const handleAdd = async (event) => {
 		event.preventDefault();
@@ -182,6 +225,23 @@ function LinksPage() {
 		}
 	};
 
+	const handleSync = async (link) => {
+		setError('');
+
+		try {
+			const accepted = await syncIntegration(link.id);
+			setLinks(
+				links.map((item) =>
+					item.id === link.id
+						? { ...item, status: accepted.status ?? 'IN_PROGRESS' }
+						: item,
+				),
+			);
+		} catch (requestError) {
+			setError(messageOf(requestError, '재수집 요청에 실패했어요.'));
+		}
+	};
+
 	const handleRemove = async (link) => {
 		if (!isLoggedIn) {
 			removeLink(link.id);
@@ -203,8 +263,12 @@ function LinksPage() {
 			description="Velog / GitHub / Notion 등 프로젝트·블로그 링크를 추가하세요"
 			backTo={ROUTES.CREATE_BASIC}
 			footer={
-				<Button size="lg" onClick={() => navigate(ROUTES.CREATE_TEXT)}>
-					{links.length === 0 ? '건너뛰기' : '다음'}
+				<Button
+					size="lg"
+					onClick={() => navigate(ROUTES.CREATE_TEXT)}
+					disabled={links.length === 0}
+				>
+					다음
 				</Button>
 			}
 		>
@@ -241,6 +305,15 @@ function LinksPage() {
 								<Status $done={link.status === 'COMPLETED'}>
 									{STATUS_LABEL[link.status] ?? link.status}
 								</Status>
+							)}
+							{isLoggedIn && link.status !== 'LOCAL' && (
+								<Button
+									variant="ghost"
+									onClick={() => handleSync(link)}
+									disabled={isCollecting(link.status)}
+								>
+									재수집
+								</Button>
 							)}
 							<Button variant="ghost" onClick={() => handleRemove(link)}>
 								삭제

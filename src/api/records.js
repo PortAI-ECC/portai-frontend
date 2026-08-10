@@ -20,8 +20,8 @@ export const activitiesApi = createRecordApi('activities', 'activities');
 
 export const techStacksApi = {
 	...createRecordApi('tech-stacks', 'techStacks'),
-	// 표에는 PUT 으로 적혀 있지만 상세 페이지 헤더는 POST 다. 상세 쪽을 따른다.
-	reorder: (skillIds) => apiClient.post('/tech-stacks/reorder', { skillIds }).then((r) => r.data),
+	// 표·상세 페이지 헤더 표기가 엇갈려 백엔드(강지호)에게 직접 문의 — PUT이 맞다.
+	reorder: (skillIds) => apiClient.put('/tech-stacks/reorder', { skillIds }).then((r) => r.data),
 };
 
 /** 마이페이지 카드가 쓰는 분류 키 → API 매핑 */

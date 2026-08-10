@@ -28,6 +28,21 @@ export function SwapCardsIcon(props) {
 	);
 }
 
+/** 맞춤화 설정 다시 열기 — 해시태그(#) 모양 */
+export function HashIcon(props) {
+	return (
+		<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+			<path
+				d="M9.5 3.5 7 20.5M17 3.5l-2.5 17M4 9h16M3 15h16"
+				stroke="currentColor"
+				strokeWidth="1.6"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 /** 프로필 사진 기본값 — 흔한 사람 실루엣 아이콘 */
 export function DefaultAvatarIcon(props) {
 	return (

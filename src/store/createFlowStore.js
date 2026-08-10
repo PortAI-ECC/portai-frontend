@@ -21,6 +21,10 @@ const initialState = {
 	links: [],
 	freeTexts: emptyFreeTexts,
 	jobPosting: { mode: 'url', url: '', text: '', fileName: '' },
+	// 분석 요청이 끝나면 받는 id. 결과물 생성 요청에 그대로 실어 보낸다.
+	jobPostingId: null,
+	// DB 명세서(preferences 테이블)의 enum/JSON 컬럼과 1:1로 대응한다.
+	preferences: { keywords: [], emphasizedTypes: [], style: '' },
 	templateId: null,
 	generationId: null,
 	// 여기까지 가봤다는 표시. 진행바에서 앞 단계로 되돌아갈 수 있는 범위를 정한다.
@@ -46,8 +50,46 @@ export const useCreateFlowStore = create(
 			setJobPosting: (patch) =>
 				set((state) => ({ jobPosting: { ...state.jobPosting, ...patch } })),
 
+			setJobPostingId: (jobPostingId) => set({ jobPostingId }),
+
 			visitStep: (step) =>
 				set((state) => ({ maxVisitedStep: Math.max(state.maxVisitedStep, step) })),
+
+			setPreferences: (patch) =>
+				set((state) => ({ preferences: { ...state.preferences, ...patch } })),
+
+			addPreferenceKeyword: (keyword) =>
+				set((state) =>
+					state.preferences.keywords.includes(keyword)
+						? state
+						: {
+								preferences: {
+									...state.preferences,
+									keywords: [...state.preferences.keywords, keyword],
+								},
+							},
+				),
+
+			removePreferenceKeyword: (keyword) =>
+				set((state) => ({
+					preferences: {
+						...state.preferences,
+						keywords: state.preferences.keywords.filter((item) => item !== keyword),
+					},
+				})),
+
+			toggleEmphasizedType: (type) =>
+				set((state) => {
+					const selected = state.preferences.emphasizedTypes.includes(type);
+					return {
+						preferences: {
+							...state.preferences,
+							emphasizedTypes: selected
+								? state.preferences.emphasizedTypes.filter((item) => item !== type)
+								: [...state.preferences.emphasizedTypes, type],
+						},
+					};
+				}),
 
 			setTemplateId: (templateId) => set({ templateId }),
 			setGenerationId: (generationId) => set({ generationId }),

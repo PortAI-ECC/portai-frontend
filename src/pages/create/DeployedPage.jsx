@@ -4,6 +4,9 @@ import styled from '@emotion/styled';
 import Button from '../../components/common/Button';
 import { ROUTES } from '../../constants/routes';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
+import { useCreateFlowStore } from '../../store/createFlowStore';
+import { downloadFile } from '../../api/generations';
+import { messageOf } from '../../api/client';
 
 // 이력서 버튼이 화면 세로 2/3 쯤, 안내 문구가 최하단에 오도록
 // 화면 높이를 채운 뒤 남는 공간을 URL 아래에 몰아준다.
@@ -97,6 +100,11 @@ const Tag = styled.span`
 	color: ${({ theme }) => theme.colors.primary};
 `;
 
+const ErrorText = styled.p`
+	font-size: 13px;
+	color: ${({ theme }) => theme.colors.danger};
+`;
+
 const Note = styled.p`
 	margin-top: auto;
 	padding-top: 40px;
@@ -108,7 +116,11 @@ const Note = styled.p`
 function DeployedPage() {
 	const navigate = useNavigate();
 	const isLoggedIn = useAuthStore(selectIsLoggedIn);
+	const generationId = useCreateFlowStore((state) => state.generationId);
+
 	const [copied, setCopied] = useState(false);
+	const [downloading, setDownloading] = useState(false);
+	const [downloadError, setDownloadError] = useState('');
 
 	const portfolioUrl = `${window.location.origin}/u/username`;
 
@@ -116,6 +128,31 @@ function DeployedPage() {
 		await navigator.clipboard.writeText(portfolioUrl);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
+	};
+
+	// 서버가 파일 본문(blob)을 그대로 내려주므로 링크를 만들어 눌러 준다.
+	const handleDownload = async () => {
+		if (generationId === null) return;
+
+		setDownloading(true);
+		setDownloadError('');
+
+		try {
+			const blob = await downloadFile(generationId);
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+
+			link.href = url;
+			link.download = `portai-resume-${generationId}.pdf`;
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			URL.revokeObjectURL(url);
+		} catch (requestError) {
+			setDownloadError(messageOf(requestError, '다운로드에 실패했어요.'));
+		} finally {
+			setDownloading(false);
+		}
 	};
 
 	return (
@@ -130,9 +167,16 @@ function DeployedPage() {
 			</UrlRow>
 
 			<Actions>
-				<ActionButton variant="secondary" size="lg">
-					이력서(PDF) 다운로드
+				<ActionButton
+					variant="secondary"
+					size="lg"
+					onClick={handleDownload}
+					disabled={generationId === null || downloading}
+				>
+					{downloading ? '내려받는 중...' : '이력서(PDF) 다운로드'}
 				</ActionButton>
+
+				{downloadError && <ErrorText role="alert">{downloadError}</ErrorText>}
 
 				{isLoggedIn ? (
 					<ActionButton size="lg" onClick={() => navigate(ROUTES.MYPAGE)}>

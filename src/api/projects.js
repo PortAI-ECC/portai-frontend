@@ -15,5 +15,18 @@ export const uploadAttachment = (projectId, file) => {
 	return apiClient.post(`/projects/${projectId}/attachments`, formData).then((r) => r.data);
 };
 
-export const generateDescription = (projectId) =>
-	apiClient.post(`/projects/${projectId}/description/generate`).then((r) => r.data);
+export const generateDescription = (projectId, tone) =>
+	apiClient
+		.post(`/projects/${projectId}/description/generate`, tone ? { tone } : undefined)
+		.then((r) => r.data);
+
+// 활동이력 관리 모달이 쓰는 인터페이스에 맞춘 어댑터.
+// 프로젝트는 첨부·AI 설명이 더 있을 뿐 목록/등록/수정/삭제 모양은 같다.
+export const projectsApi = {
+	listKey: 'projects',
+	list: getProjects,
+	listItems: (params) => getProjects(params).then((data) => data?.projects ?? []),
+	create: createProject,
+	update: updateProject,
+	remove: deleteProject,
+};
