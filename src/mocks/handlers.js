@@ -171,14 +171,10 @@ const recordHandlers = RECORD_SPECS.flatMap((spec) => {
 	];
 });
 
-// 결과물 5종. DB 명세서 generation_results.type ENUM 그대로.
-const GENERATION_TYPES = [
-	'SELF_INTRODUCTION',
-	'RESUME',
-	'PORTFOLIO',
-	'PROJECT_INTRO',
-	'INTERVIEW_QUESTIONS',
-];
+// DB 명세서 generation_results.type ENUM 은 INTERVIEW_QUESTIONS 까지 5종이지만,
+// 결과물이 '자기소개 사이트'라 면접 질문은 화면에서 빼 뒀다(src/constants/resultTypes.js).
+// 목 서버도 만들지 않는 쪽으로 맞춘다.
+const GENERATION_TYPES = ['SELF_INTRODUCTION', 'RESUME', 'PORTFOLIO', 'PROJECT_INTRO'];
 
 const SAMPLE_CONTENT = {
 	SELF_INTRODUCTION:
@@ -188,8 +184,6 @@ const SAMPLE_CONTENT = {
 		'AI 이력서 생성 서비스 / 팀 프로젝트 / 백엔드 개발\n인증 서버와 API 게이트웨이를 설계·구현했습니다.',
 	PROJECT_INTRO:
 		'본 프로젝트는 GitHub·Velog 연동을 통해 흩어진 기록을 한 곳으로 모으는 것에서 출발했습니다.',
-	INTERVIEW_QUESTIONS:
-		'1. 결제 실패율을 낮추기 위해 가장 먼저 확인한 지표는 무엇인가요?\n2. API 게이트웨이를 직접 설계하며 가장 고민한 부분은?',
 };
 
 // 생성 요청을 받으면 결과가 하나씩 완료되는 흐름을 흉내 낸다.

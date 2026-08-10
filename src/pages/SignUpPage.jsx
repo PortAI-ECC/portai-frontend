@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Card from '../components/common/Card';
@@ -9,6 +9,7 @@ import Modal from '../components/common/Modal';
 import { ROUTES } from '../constants/routes';
 import { signUp } from '../api/auth';
 import { messageOf } from '../api/client';
+import { formatPhone, isValidPhone, PHONE_MESSAGE } from '../utils/phone';
 
 const Wrapper = styled.div`
 	max-width: 460px;
@@ -82,9 +83,32 @@ function SignUpPage() {
 	// 닫아야 비로소 이동한다.
 	const [signedUpName, setSignedUpName] = useState(null);
 
+	const phoneRef = useRef(null);
+
+	// 연락처는 비어 있을 때와 형식이 틀렸을 때 모두 같은 말풍선을 띄운다.
+	// 그냥 두면 빈 값에는 브라우저 기본 문구('이 입력란을 작성하세요.')가 따로
+	// 떠서 안내가 두 갈래로 갈린다. 값이 바뀔 때마다 우리 문구로 덮어 하나로 만든다.
+	useEffect(() => {
+		phoneRef.current?.setCustomValidity(isValidPhone(form.phone) ? '' : PHONE_MESSAGE);
+	}, [form.phone]);
+
 	const handleChange = (event) => {
 		const { name, value } = event.target;
 		setForm((prev) => ({ ...prev, [name]: value }));
+	};
+
+	// 하이픈을 어디에 넣든(혹은 안 넣든) 칸을 벗어나는 순간 한 모양으로 맞춘다.
+	// 그러고도 자릿수가 안 맞으면 이메일 칸과 똑같이 브라우저 말풍선으로 알린다.
+	// 아직 한 글자도 안 쳤을 때까지 다그치지는 않는다.
+	const handlePhoneBlur = () => {
+		const formatted = formatPhone(form.phone);
+		setForm((prev) => ({ ...prev, phone: formatted }));
+
+		if (formatted && !isValidPhone(formatted)) {
+			const input = phoneRef.current;
+			input?.setCustomValidity(PHONE_MESSAGE);
+			input?.reportValidity();
+		}
 	};
 
 	const handleSubmit = async (event) => {
@@ -103,7 +127,8 @@ function SignUpPage() {
 				name: form.name,
 				email: form.email,
 				password: form.password,
-				phone: form.phone,
+				// 칸을 안 벗어나고 바로 제출하면 아직 하이픈이 없다. 서버에는 늘 같은 모양으로.
+				phone: formatPhone(form.phone),
 			});
 			// signup 응답에는 토큰이 없어 자동 로그인이 불가능하다.
 			// 모달을 닫을 때 로그인 화면으로 보낸다.
@@ -148,8 +173,14 @@ function SignUpPage() {
 						/>
 					</Field>
 
-					<Field label="연락처" htmlFor="phone" required>
+					<Field
+						label="연락처"
+						htmlFor="phone"
+						message="하이픈 없이 입력해도 자동으로 맞춰 드려요."
+						required
+					>
 						<Input
+							ref={phoneRef}
 							id="phone"
 							name="phone"
 							type="tel"
@@ -157,7 +188,9 @@ function SignUpPage() {
 							placeholder="010-0000-0000"
 							value={form.phone}
 							onChange={handleChange}
-							required
+							onBlur={handlePhoneBlur}
+							// required/pattern 은 일부러 안 건다. 걸면 상황마다 브라우저 기본
+							// 문구가 따로 떠서, 위 effect 의 한 문장으로 통일되지 않는다.
 						/>
 					</Field>
 
@@ -201,7 +234,7 @@ function SignUpPage() {
 
 					<Footer>
 						이미 계정이 있으신가요?{' '}
-						<LoginLink type="button" onClick={() => navigate(ROUTES.HOME)}>
+						<LoginLink type="button" onClick={() => navigate(ROUTES.LOGIN)}>
 							로그인
 						</LoginLink>
 					</Footer>
@@ -210,14 +243,14 @@ function SignUpPage() {
 
 			<Modal
 				open={signedUpName !== null}
-				onClose={() => navigate(ROUTES.HOME)}
+				onClose={() => navigate(ROUTES.LOGIN)}
 				title="회원가입 완료"
 			>
 				<SuccessBody>
 					<SuccessMessage>
 						{signedUpName}님, 가입이 완료됐어요. 로그인 후 이용해 주세요.
 					</SuccessMessage>
-					<Button size="lg" onClick={() => navigate(ROUTES.HOME)}>
+					<Button size="lg" onClick={() => navigate(ROUTES.LOGIN)}>
 						로그인하러 가기
 					</Button>
 				</SuccessBody>

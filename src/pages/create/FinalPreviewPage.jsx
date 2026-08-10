@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Button from '../../components/common/Button';
-import Spinner from '../../components/common/Spinner';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
+import { useDelayedVisible } from '../../hooks/useDelayedVisible';
+import ResultPreview from '../../components/result/ResultPreview';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
@@ -47,24 +49,6 @@ const Frame = styled.div`
 	}
 `;
 
-const Sections = styled.div`
-	display: flex;
-	flex-direction: column;
-	gap: 20px;
-`;
-
-const Block = styled.div`
-	height: ${({ $height }) => $height};
-	border-radius: ${({ theme }) => theme.radii.md};
-	background: ${({ theme }) => theme.colors.primarySoft};
-`;
-
-const BlockRow = styled.div`
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 20px;
-`;
-
 const Actions = styled.div`
 	flex: none;
 	margin-top: 24px;
@@ -73,37 +57,10 @@ const Actions = styled.div`
 	gap: 16px;
 `;
 
-const ResultSection = styled.section`
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-`;
-
-const ResultTitle = styled.h2`
-	font-size: 17px;
-	font-weight: 700;
-`;
-
-// 생성된 본문은 줄바꿈이 의미를 가지므로 그대로 살린다.
-const ResultBody = styled.p`
-	font-size: 14px;
-	line-height: 1.7;
-	color: ${({ theme }) => theme.colors.textSub};
-	white-space: pre-wrap;
-`;
-
 const ErrorText = styled.p`
 	font-size: 14px;
 	color: ${({ theme }) => theme.colors.danger};
 `;
-
-const RESULT_LABEL = {
-	SELF_INTRODUCTION: '자기소개',
-	RESUME: '이력서',
-	PORTFOLIO: '포트폴리오',
-	PROJECT_INTRO: '프로젝트 소개',
-	INTERVIEW_QUESTIONS: '예상 면접 질문',
-};
 
 function FinalPreviewPage() {
 	const navigate = useNavigate();
@@ -113,6 +70,8 @@ function FinalPreviewPage() {
 	const [generation, setGeneration] = useState(null);
 	const [loading, setLoading] = useState(isLoggedIn && generationId !== null);
 	const [error, setError] = useState('');
+	// 금방 끝나면 로딩 모달을 아예 띄우지 않는다(걸린 시간으로만 판단).
+	const showLoading = useDelayedVisible(loading);
 
 	useEffect(() => {
 		if (!isLoggedIn || generationId === null) return;
@@ -135,40 +94,17 @@ function FinalPreviewPage() {
 		};
 	}, [isLoggedIn, generationId]);
 
-	// 내용이 있는 항목만 보여준다. 아직 생성 전이면 와이어프레임 자리표시자를 그대로 둔다.
-	const filled = (generation?.results ?? []).filter((result) => result.content?.trim());
-
 	return (
 		<Wrapper>
 			<Title>최종 결과물 미리보기</Title>
 
+			<LoadingOverlay open={showLoading} message="결과물을 불러오는 중이에요" />
+
 			<Frame>
-				{loading && <Spinner message="결과물을 불러오는 중..." />}
 				{error && <ErrorText role="alert">{error}</ErrorText>}
 
-				{!loading && !error && filled.length > 0 && (
-					<Sections>
-						{filled.map((result) => (
-							<ResultSection key={result.type}>
-								<ResultTitle>{RESULT_LABEL[result.type] ?? result.type}</ResultTitle>
-								<ResultBody>{result.content}</ResultBody>
-							</ResultSection>
-						))}
-					</Sections>
-				)}
-
-				{!loading && !error && filled.length === 0 && (
-					<Sections>
-						<Block $height="220px" />
-						<BlockRow>
-							<Block $height="240px" />
-							<Block $height="240px" />
-						</BlockRow>
-						<Block $height="320px" />
-						<Block $height="260px" />
-						<Block $height="320px" />
-					</Sections>
-				)}
+				{/* 임시 결과의 전체화면 미리보기와 같은 컴포넌트를 써서 둘이 어긋나지 않게 한다. */}
+				{!loading && !error && <ResultPreview generation={generation} />}
 			</Frame>
 
 			<Actions>

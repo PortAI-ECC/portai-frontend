@@ -29,6 +29,9 @@ const initialState = {
 	generationId: null,
 	// 여기까지 가봤다는 표시. 진행바에서 앞 단계로 되돌아갈 수 있는 범위를 정한다.
 	maxVisitedStep: 0,
+	// 'create' = 새로 만드는 중, 'manage' = 마이페이지에서 기존 사이트를 다시 연 것.
+	// 재수집처럼 '이미 만든 사이트를 계속 관리할 때만' 의미 있는 동작을 가른다.
+	entryMode: 'create',
 };
 
 // 5단계 생성 폼은 페이지를 이동하며 이어지므로, 새로고침에도 살아남도록 persist 한다.
@@ -93,6 +96,8 @@ export const useCreateFlowStore = create(
 
 			setTemplateId: (templateId) => set({ templateId }),
 			setGenerationId: (generationId) => set({ generationId }),
+
+			setEntryMode: (entryMode) => set({ entryMode }),
 
 			reset: () => set(initialState),
 		}),

@@ -4,7 +4,8 @@ import styled from '@emotion/styled';
 import CreateStepLayout from '../../components/layout/CreateStepLayout';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import Spinner from '../../components/common/Spinner';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
+import { useDelayedVisible } from '../../hooks/useDelayedVisible';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
@@ -125,12 +126,18 @@ function LinksPage() {
 	const addLink = useCreateFlowStore((state) => state.addLink);
 	const removeLink = useCreateFlowStore((state) => state.removeLink);
 	const setLinks = useCreateFlowStore((state) => state.setLinks);
+	const entryMode = useCreateFlowStore((state) => state.entryMode);
+
+	// 재수집은 이미 만든 사이트를 계속 관리할 때만 쓸모가 있다. 새로 만드는
+	// 중이라면 방금 등록한 링크를 다시 긁을 이유가 없어 아예 감춘다.
+	const canResync = isLoggedIn && entryMode === 'manage';
 
 	const [url, setUrl] = useState('');
 	const [error, setError] = useState('');
 	const [submitting, setSubmitting] = useState(false);
 	// 로그인 상태면 곧바로 목록을 부르므로 처음부터 로딩으로 시작한다.
 	const [loading, setLoading] = useState(isLoggedIn);
+	const showLoading = useDelayedVisible(loading);
 
 	// 로그인 상태면 서버에 등록된 연동 목록이 원본이다.
 	useEffect(() => {
@@ -198,6 +205,8 @@ function LinksPage() {
 
 		setError('');
 
+		// 비로그인 링크는 서버에 등록되지 않아 수집이라는 과정 자체가 없다.
+		// 상태 배지도 띄우지 않는다(LOCAL 은 배지 없음).
 		if (!isLoggedIn) {
 			addLink({ id: crypto.randomUUID(), url: url.trim(), ...parsed, status: 'LOCAL' });
 			setUrl('');
@@ -288,7 +297,7 @@ function LinksPage() {
 
 			{error && <ErrorText role="alert">{error}</ErrorText>}
 
-			{loading && <Spinner message="연동 목록을 불러오는 중..." />}
+			<LoadingOverlay open={showLoading} message="연동 목록을 불러오는 중이에요" />
 
 			{!loading && links.length === 0 && <Empty>아직 추가한 링크가 없어요.</Empty>}
 
@@ -306,7 +315,7 @@ function LinksPage() {
 									{STATUS_LABEL[link.status] ?? link.status}
 								</Status>
 							)}
-							{isLoggedIn && link.status !== 'LOCAL' && (
+							{canResync && (
 								<Button
 									variant="ghost"
 									onClick={() => handleSync(link)}

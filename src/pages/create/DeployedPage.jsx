@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Button from '../../components/common/Button';
@@ -105,6 +105,11 @@ const ErrorText = styled.p`
 	color: ${({ theme }) => theme.colors.danger};
 `;
 
+const Hint = styled.p`
+	font-size: 13px;
+	color: ${({ theme }) => theme.colors.textMuted};
+`;
+
 const Note = styled.p`
 	margin-top: auto;
 	padding-top: 40px;
@@ -117,10 +122,20 @@ function DeployedPage() {
 	const navigate = useNavigate();
 	const isLoggedIn = useAuthStore(selectIsLoggedIn);
 	const generationId = useCreateFlowStore((state) => state.generationId);
+	const reset = useCreateFlowStore((state) => state.reset);
 
 	const [copied, setCopied] = useState(false);
 	const [downloading, setDownloading] = useState(false);
 	const [downloadError, setDownloadError] = useState('');
+
+	// 배포까지 끝났으면 이 위자드는 여기서 완결이다. 입력값과 '어디까지 가봤는지'를
+	// 비워 둬야, 다음에 '새로 만들기'로 들어왔을 때 1단계부터 다시 밟게 된다.
+	// 스토어를 비우기 전에 이 화면이 계속 써야 할 값은 처음 값 그대로 붙잡아 둔다.
+	const [downloadableId] = useState(generationId);
+
+	useEffect(() => {
+		reset();
+	}, [reset]);
 
 	const portfolioUrl = `${window.location.origin}/u/username`;
 
@@ -132,18 +147,18 @@ function DeployedPage() {
 
 	// 서버가 파일 본문(blob)을 그대로 내려주므로 링크를 만들어 눌러 준다.
 	const handleDownload = async () => {
-		if (generationId === null) return;
+		if (downloadableId === null) return;
 
 		setDownloading(true);
 		setDownloadError('');
 
 		try {
-			const blob = await downloadFile(generationId);
+			const blob = await downloadFile(downloadableId);
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement('a');
 
 			link.href = url;
-			link.download = `portai-resume-${generationId}.pdf`;
+			link.download = `portai-resume-${downloadableId}.pdf`;
 			document.body.appendChild(link);
 			link.click();
 			link.remove();
@@ -167,14 +182,20 @@ function DeployedPage() {
 			</UrlRow>
 
 			<Actions>
+				{/* PDF 는 서버가 만들어 둔 결과물을 받아오는 것이라, 결과물이 서버에
+				    저장되지 않는 비로그인 진행에서는 내려받을 대상 자체가 없다. */}
 				<ActionButton
 					variant="secondary"
 					size="lg"
 					onClick={handleDownload}
-					disabled={generationId === null || downloading}
+					disabled={downloadableId === null || downloading}
 				>
 					{downloading ? '내려받는 중...' : '이력서(PDF) 다운로드'}
 				</ActionButton>
+
+				{downloadableId === null && (
+					<Hint>로그인하고 만들면 이력서를 PDF로 내려받을 수 있어요.</Hint>
+				)}
 
 				{downloadError && <ErrorText role="alert">{downloadError}</ErrorText>}
 

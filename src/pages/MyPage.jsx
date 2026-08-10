@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import Spinner from '../components/common/Spinner';
+import LoadingOverlay from '../components/common/LoadingOverlay';
+import { useDelayedVisible } from '../hooks/useDelayedVisible';
 import { RECORD_CATEGORIES } from '../constants/recordCategories';
 import { ROUTES } from '../constants/routes';
 import { getGenerations } from '../api/generations';
 import { RECORD_APIS } from '../api/records';
 import { projectsApi } from '../api/projects';
 import RecordManagerModal from '../components/record/RecordManagerModal';
+import { useCreateFlowStore } from '../store/createFlowStore';
 
 // 와이어프레임상 '+ 새로 만들기'는 마이페이지 제목줄 오른쪽에만 있다.
 const TitleRow = styled.div`
@@ -129,6 +131,22 @@ function MyPage() {
 	const [failed, setFailed] = useState(false);
 	const [counts, setCounts] = useState({});
 	const [openCategory, setOpenCategory] = useState(null);
+	const resetFlow = useCreateFlowStore((state) => state.reset);
+	const setEntryMode = useCreateFlowStore((state) => state.setEntryMode);
+	const showLoading = useDelayedVisible(!failed && generations === null);
+
+	// 새로 만들기는 늘 빈 위자드에서 시작한다.
+	const handleCreateNew = () => {
+		resetFlow();
+		navigate(ROUTES.CREATE_BASIC);
+	};
+
+	// 기존 사이트를 다시 여는 길. 여기로 들어와야 재수집처럼
+	// '계속 관리하는' 동작들이 나타난다.
+	const handleOpenSite = (id) => {
+		setEntryMode('manage');
+		navigate(`${ROUTES.CREATE_DRAFT}?id=${id}`);
+	};
 
 	useEffect(() => {
 		getGenerations()
@@ -163,9 +181,11 @@ function MyPage() {
 
 	return (
 		<>
+			<LoadingOverlay open={showLoading} message="만든 포트폴리오를 불러오는 중이에요" />
+
 			<TitleRow>
 				<PageTitle>마이페이지</PageTitle>
-				<Button onClick={() => navigate(ROUTES.CREATE_BASIC)}>+ 새로 만들기</Button>
+				<Button onClick={handleCreateNew}>+ 새로 만들기</Button>
 			</TitleRow>
 
 			<Columns>
@@ -218,21 +238,19 @@ function MyPage() {
 					<SectionTitle>생성한 사이트 관리</SectionTitle>
 
 					{failed && <EmptyText>목록을 불러오지 못했습니다.</EmptyText>}
-					{!failed && generations === null && <Spinner message="불러오는 중..." />}
 					{!failed && generations?.length === 0 && (
 						<EmptyText>아직 생성한 포트폴리오가 없어요. 새로 만들어 보세요.</EmptyText>
 					)}
 
 					{generations?.length > 0 && (
 						<SiteGrid>
+							{/* 식별자는 명세서 응답 그대로 generationId 다. */}
 							{generations.map((item) => (
-								<SiteCard key={item.id}>
+								<SiteCard key={item.generationId}>
 									<Thumbnail
 										as="button"
 										type="button"
-										onClick={() =>
-											navigate(`${ROUTES.CREATE_DRAFT}?id=${item.id}`)
-										}
+										onClick={() => handleOpenSite(item.generationId)}
 									/>
 									<SiteName>{item.title ?? '제목 없는 포트폴리오'}</SiteName>
 								</SiteCard>

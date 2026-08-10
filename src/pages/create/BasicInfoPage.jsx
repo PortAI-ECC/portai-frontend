@@ -12,6 +12,7 @@ import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
 import { getProfile, updateProfile } from '../../api/profile';
 import { messageOf } from '../../api/client';
+import { formatPhone } from '../../utils/phone';
 
 const Form = styled.form`
 	max-width: 520px;
@@ -262,6 +263,7 @@ function BasicInfoPage() {
 						placeholder="010-0000-0000"
 						value={basicInfo.phone}
 						onChange={handleChange}
+						onBlur={() => setBasicInfo({ phone: formatPhone(basicInfo.phone) })}
 					/>
 				</Field>
 

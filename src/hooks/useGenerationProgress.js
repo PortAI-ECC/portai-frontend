@@ -10,7 +10,6 @@ const STAGE_MESSAGE = {
 	RESUME: '이력서를 작성하는 중',
 	PORTFOLIO: '포트폴리오를 구성하는 중',
 	PROJECT_INTRO: '프로젝트 설명을 다듬는 중',
-	INTERVIEW_QUESTIONS: '예상 면접 질문을 만드는 중',
 };
 
 // 진행률은 '끝난 결과물 / 전체 결과물'. 아직 하나도 안 끝났어도 막대가
@@ -70,7 +69,10 @@ export function useGenerationProgress() {
 					return generation;
 				},
 				(generation) => isSettled(generation.overallStatus),
-				{ signal: controller.signal },
+				// 기본 2초로 물어보면 결과물이 두세 개씩 한꺼번에 끝나 버려서
+				// 진행 문구가 거의 안 바뀐다. 이 화면은 사람이 보고 있는 동안만
+				// 도는 폴링이라 조금 더 자주 물어 단계가 넘어가는 게 보이게 한다.
+				{ interval: 1000, signal: controller.signal },
 			);
 
 			setValue(100);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import CreateStepLayout from '../../components/layout/CreateStepLayout';
 import Card from '../../components/common/Card';
@@ -12,6 +12,8 @@ import Field from '../../components/common/Field';
 import Textarea from '../../components/common/Textarea';
 import Input from '../../components/common/Input';
 import { FullscreenIcon, HashIcon, SwapCardsIcon } from '../../components/common/icons';
+import ResultPreview from '../../components/result/ResultPreview';
+import { RESULT_SECTIONS } from '../../constants/resultTypes';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
@@ -22,7 +24,6 @@ import {
 	regenerate as regenerateGeneration,
 	updateResult,
 } from '../../api/generations';
-import { isSettled } from '../../api/poll';
 import { messageOf } from '../../api/client';
 
 // align-items 를 stretch 로 둬 두 패널의 세로 길이를 맞춘다.
@@ -78,23 +79,7 @@ const Fields = styled.div`
 `;
 
 const Preview = styled.div`
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
 	min-height: 680px;
-`;
-
-const Block = styled.div`
-	background: ${({ theme }) => theme.colors.surfaceSolid};
-	border: 1px solid ${({ theme }) => theme.colors.border};
-	border-radius: ${({ theme }) => theme.radii.md};
-	height: ${({ $height }) => $height};
-`;
-
-const BlockRow = styled.div`
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 16px;
 `;
 
 const TemplateGrid = styled.div`
@@ -207,16 +192,8 @@ const ErrorText = styled.p`
 
 // 편집 영역은 결과물 종류와 1:1 이어야 한다. 수동 수정이
 // PATCH /api/generations/{id}/results/{type} 로 나가기 때문에,
-// key 를 DB 명세서 generation_results.type ENUM 그대로 쓴다.
-const SECTIONS = [
-	{ key: 'SELF_INTRODUCTION', label: '자기소개' },
-	{ key: 'RESUME', label: '이력서' },
-	{ key: 'PORTFOLIO', label: '포트폴리오' },
-	{ key: 'PROJECT_INTRO', label: '프로젝트 소개' },
-	{ key: 'INTERVIEW_QUESTIONS', label: '예상 면접 질문' },
-];
-
-const emptyDrafts = () => Object.fromEntries(SECTIONS.map(({ key }) => [key, '']));
+// key 는 DB 명세서 generation_results.type ENUM 그대로다.
+const emptyDrafts = () => Object.fromEntries(RESULT_SECTIONS.map(({ key }) => [key, '']));
 
 const draftsFrom = (generation) => {
 	const drafts = emptyDrafts();
@@ -263,14 +240,31 @@ function DraftResultPage() {
 	const jobPostingId = useCreateFlowStore((state) => state.jobPostingId);
 	const generationId = useCreateFlowStore((state) => state.generationId);
 	const setGenerationId = useCreateFlowStore((state) => state.setGenerationId);
+	const entryMode = useCreateFlowStore((state) => state.entryMode);
+
+	// 마이페이지에서 열면 /create/draft?id=123 으로 들어온다. 주소에 있는 쪽이
+	// 항상 옳으므로(새로고침해도 같은 결과물이 열려야 한다) 스토어를 여기에 맞춘다.
+	const [searchParams] = useSearchParams();
+	const requestedId = Number(searchParams.get('id')) || null;
+
+	useEffect(() => {
+		if (requestedId !== null && requestedId !== generationId) setGenerationId(requestedId);
+	}, [requestedId, generationId, setGenerationId]);
 
 	const [drafts, setDrafts] = useState(emptyDrafts);
+	// 미리보기(오른쪽 패널·전체화면)는 편집칸이 아니라 서버 응답 원본을 그린다.
+	const [generation, setGeneration] = useState(null);
 	// 서버에 저장돼 있는 값. 편집칸을 벗어날 때 이 값과 다를 때만 PATCH 를 보낸다.
 	const savedDraftsRef = useRef(emptyDrafts());
 	const [draftError, setDraftError] = useState('');
 	// 채용 공고 단계에서 넘어오면 맞춤화 설정부터 고르게 하고, 그걸 닫으면 바로 이어서
 	// 템플릿 선택으로 넘어간다. 한 번 다 닫은 뒤에는 헤더의 아이콘으로 각각 다시 연다.
-	const [preferencesModalOpen, setPreferencesModalOpen] = useState(() => templateId === null);
+	//
+	// 다만 마이페이지에서 기존 포트폴리오를 여는 길(entryMode='manage')은 이미 골라 둔
+	// 결과를 다시 보러 온 것이라, 설정을 처음부터 다시 묻지 않는다.
+	const [preferencesModalOpen, setPreferencesModalOpen] = useState(
+		() => templateId === null && entryMode !== 'manage',
+	);
 	const [templateModalOpen, setTemplateModalOpen] = useState(false);
 	// 최초 진입 때 체이닝으로 뜬 템플릿 모달은 템플릿을 골라야만 닫힌다(X 없음).
 	// 헤더의 '템플릿 변경' 아이콘으로 다시 연 경우에만 자유롭게 닫을 수 있다.
@@ -292,11 +286,12 @@ function DraftResultPage() {
 		let cancelled = false;
 
 		getGeneration(generationId)
-			.then((generation) => {
+			.then((loadedGeneration) => {
 				if (cancelled) return;
-				const loaded = draftsFrom(generation);
+				const loaded = draftsFrom(loadedGeneration);
 				savedDraftsRef.current = loaded;
 				setDrafts(loaded);
+				setGeneration(loadedGeneration);
 			})
 			.catch(() => {
 				if (!cancelled) setDraftError('이전 결과물을 불러오지 못했어요.');
@@ -344,28 +339,25 @@ function DraftResultPage() {
 		}
 	};
 
-	const applyGeneration = (generation) => {
-		if (!generation) return;
+	const applyGeneration = (result) => {
+		if (!result) return;
 
-		const loaded = draftsFrom(generation);
+		const loaded = draftsFrom(result);
 		savedDraftsRef.current = loaded;
 		setDrafts(loaded);
+		setGeneration(result);
 
-		if (generation.overallStatus === 'FAILED') {
+		if (result.overallStatus === 'FAILED') {
 			setDraftError('결과물을 만들지 못했어요. 다시 시도해 주세요.');
-		} else if (generation.overallStatus === 'PARTIALLY_COMPLETED') {
+		} else if (result.overallStatus === 'PARTIALLY_COMPLETED') {
 			setDraftError('일부 항목을 만들지 못했어요. 재생성을 눌러 다시 시도할 수 있어요.');
 		}
 	};
 
-	const handleGenerate = async () => {
-		// 비로그인 상태에서는 보낼 곳이 없어 지금까지처럼 미리보기로만 넘어간다.
-		if (!isLoggedIn) {
-			navigate(ROUTES.CREATE_PREVIEW);
-			return;
-		}
-
-		const generation = await progress.track(async () => {
+	// 맞춤화 설정과 템플릿을 다 고른 뒤에야 그 값을 실어 생성을 요청한다.
+	// 여기가 이 위자드에서 가장 오래 걸리는 구간이라, 로딩 화면도 여기서 뜬다.
+	const runGeneration = async () => {
+		const result = await progress.track(async () => {
 			const accepted = await createGeneration({
 				jobPostingId,
 				style: preferences.style || undefined,
@@ -374,24 +366,22 @@ function DraftResultPage() {
 			return accepted.generationId;
 		});
 
-		if (!generation) return;
-
-		applyGeneration(generation);
-		if (isSettled(generation.overallStatus) && generation.overallStatus !== 'FAILED') {
-			navigate(ROUTES.CREATE_PREVIEW);
-		}
+		applyGeneration(result);
 	};
 
 	const handleRegenerate = async () => {
 		if (generationId === null) return;
 
-		const generation = await progress.track(async () => {
+		const result = await progress.track(async () => {
 			await regenerateGeneration(generationId);
 			return generationId;
 		});
 
-		applyGeneration(generation);
+		applyGeneration(result);
 	};
+
+	// 결과물은 이미 만들어져 있으니 여기서는 최종 미리보기로 넘기기만 한다.
+	const handleGoToPreview = () => navigate(ROUTES.CREATE_PREVIEW);
 
 	// 처음 들어온 흐름(템플릿 미선택)일 때만 템플릿 선택으로 이어진다.
 	// 헤더 아이콘으로 재설정을 열었을 때는 닫아도 템플릿 모달이 따라 뜨지 않는다.
@@ -410,7 +400,17 @@ function DraftResultPage() {
 
 		setPreferencesError('');
 		setPreferencesModalOpen(false);
-		if (templateId === null) setTemplateModalOpen(true);
+		if (templateId === null && entryMode !== 'manage') setTemplateModalOpen(true);
+	};
+
+	// 최초 진입 흐름에서 템플릿까지 고르고 나면 곧바로 생성을 시작한다.
+	// 헤더 아이콘으로 템플릿만 바꾼 경우(dismissible)에는 다시 만들지 않는다.
+	const handleCloseTemplate = async () => {
+		const isInitialFlow = !templateModalDismissible;
+		setTemplateModalOpen(false);
+
+		if (!isInitialFlow || !isLoggedIn || generationId !== null) return;
+		await runGeneration();
 	};
 
 	const handleAddKeyword = (event) => {
@@ -427,7 +427,7 @@ function DraftResultPage() {
 			title="임시 결과"
 			backTo={ROUTES.CREATE_JOB}
 			footer={
-				<Button size="lg" onClick={handleGenerate} disabled={progress.running}>
+				<Button size="lg" onClick={handleGoToPreview} disabled={progress.running}>
 					생성하기
 				</Button>
 			}
@@ -453,7 +453,7 @@ function DraftResultPage() {
 					)}
 
 					<Fields>
-						{SECTIONS.map(({ key, label }) => (
+						{RESULT_SECTIONS.map(({ key, label }) => (
 							<Field key={key} label={label} htmlFor={key}>
 								<Textarea
 									id={key}
@@ -501,14 +501,9 @@ function DraftResultPage() {
 						</IconRow>
 					</PanelHead>
 
+					{/* 전체화면·최종 결과물과 같은 컴포넌트. 좁은 칸이라 compact 로만 그린다. */}
 					<Preview>
-						<Block $height="60px" />
-						<BlockRow>
-							<Block $height="120px" />
-							<Block $height="120px" />
-						</BlockRow>
-						<Block $height="160px" />
-						<Block $height="160px" />
+						<ResultPreview generation={generation} compact />
 					</Preview>
 				</Card>
 			</Columns>
@@ -623,29 +618,21 @@ function DraftResultPage() {
 					))}
 				</TemplateGrid>
 				<ModalFooter>
-					<Button disabled={!templateId} onClick={() => setTemplateModalOpen(false)}>
+					<Button disabled={!templateId} onClick={handleCloseTemplate}>
 						선택 완료
 					</Button>
 				</ModalFooter>
 			</Modal>
 
-			{/* 09.최종 결과물 미리보기와 목적이 같은 '전체화면' 확인이라, 모달 폭도
-			    그에 맞춰 화면 대부분을 채운다. */}
+			{/* 최종 결과물 미리보기와 '같은 것'을 보여줘야 하는 자리라 같은 컴포넌트를
+			    쓰고, 모달 폭도 그에 맞춰 화면 대부분을 채운다. */}
 			<Modal
 				open={fullscreenOpen}
 				onClose={() => setFullscreenOpen(false)}
 				title="임시 결과 사이트 미리보기 (전체화면)"
 				width="94vw"
 			>
-				<Preview>
-					<Block $height="160px" />
-					<BlockRow>
-						<Block $height="240px" />
-						<Block $height="240px" />
-					</BlockRow>
-					<Block $height="300px" />
-					<Block $height="240px" />
-				</Preview>
+				<ResultPreview generation={generation} />
 			</Modal>
 
 			<ProgressOverlay
