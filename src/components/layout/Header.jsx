@@ -93,6 +93,10 @@ function Header() {
 	const isWizard = WIZARD_PATHS.includes(pathname);
 	// 최종 결과물은 결과만 보는 화면이라 헤더에 아무 액션도 두지 않는다.
 	const isFinalPreview = pathname === ROUTES.CREATE_PREVIEW;
+	// 배포 완료 화면도 마찬가지. 본문에 이미 '로그인으로 결과 저장하기' 전용
+	// CTA 가 있어서, 비로그인일 때 헤더에 회원가입까지 얹으면 문구가 두 갈래로
+	// 갈린다. 로그인 상태의 로그아웃은 다른 화면과 똑같이 그대로 둔다.
+	const isDeployed = pathname === ROUTES.CREATE_DONE;
 
 	// 로그인 상태의 로그아웃만 조용한 텍스트로 둔다. 비로그인의 로그인 버튼은
 	// 눌러 줬으면 하는 버튼이라 눈에 띄는 그라데이션 그대로다.
@@ -102,6 +106,7 @@ function Header() {
 	// 마이페이지로 가는 길은 홈의 프로필 카드 쪽에 따로 있다.
 	const renderAction = () => {
 		if (isFinalPreview) return null;
+		if (isDeployed && !isLoggedIn) return null;
 
 		if (isLoggedIn) {
 			return quiet ? (
