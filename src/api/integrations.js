@@ -1,6 +1,9 @@
 import { apiClient } from './client';
+import { listOf } from './normalize';
 
-export const getIntegrations = () => apiClient.get('/integrations').then((r) => r.data);
+// 목록은 { success, data: [...] } 봉투로 온다(인터셉터가 벗겨 배열만 남는다).
+export const getIntegrations = () =>
+	apiClient.get('/integrations').then((r) => listOf(r.data, 'integrations'));
 export const createIntegration = (payload) =>
 	apiClient.post('/integrations', payload).then((r) => r.data);
 export const deleteIntegration = (integrationId) =>

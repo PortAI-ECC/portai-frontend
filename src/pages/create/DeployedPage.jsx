@@ -176,7 +176,8 @@ function DeployedPage() {
 		setDownloadError('');
 
 		try {
-			const blob = await downloadFile(downloadableId);
+			// 다운로드는 결과물 종류별로 나뉜다. 이 버튼이 주는 건 이력서다.
+			const blob = await downloadFile(downloadableId, 'RESUME');
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement('a');
 

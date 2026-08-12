@@ -1,11 +1,13 @@
 import { apiClient } from './client';
+import { listOf } from './normalize';
 
 export const getProjects = (params) => apiClient.get('/projects', { params }).then((r) => r.data);
 export const getProject = (projectId) =>
 	apiClient.get(`/projects/${projectId}`).then((r) => r.data);
 export const createProject = (payload) => apiClient.post('/projects', payload).then((r) => r.data);
+// 프로젝트만 수정이 PATCH 가 아니라 PUT 이다(활동이력과 같음).
 export const updateProject = (projectId, payload) =>
-	apiClient.patch(`/projects/${projectId}`, payload).then((r) => r.data);
+	apiClient.put(`/projects/${projectId}`, payload).then((r) => r.data);
 export const deleteProject = (projectId) =>
 	apiClient.delete(`/projects/${projectId}`).then((r) => r.data);
 
@@ -25,7 +27,7 @@ export const generateDescription = (projectId, tone) =>
 export const projectsApi = {
 	listKey: 'projects',
 	list: getProjects,
-	listItems: (params) => getProjects(params).then((data) => data?.projects ?? []),
+	listItems: (params) => getProjects(params).then((data) => listOf(data, 'projects')),
 	create: createProject,
 	update: updateProject,
 	remove: deleteProject,

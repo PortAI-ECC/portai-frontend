@@ -142,7 +142,8 @@ function JobPostingPage() {
 					? await analyzeByUrl(jobPosting.url.trim())
 					: await analyzeByFile(file);
 
-			const id = accepted.jobPostingId;
+			// 응답 식별자는 jobPostingId 가 아니라 id 다(명세서와 실물이 달라 둘 다 받는다).
+			const id = accepted.id ?? accepted.jobPostingId;
 			setJobPostingId(id);
 
 			// 분석은 접수(PENDING)만 먼저 오고 결과는 나중에 채워진다.

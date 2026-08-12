@@ -356,14 +356,18 @@ function DraftResultPage() {
 
 	// 맞춤화 설정과 템플릿을 다 고른 뒤에야 그 값을 실어 생성을 요청한다.
 	// 여기가 이 위자드에서 가장 오래 걸리는 구간이라, 로딩 화면도 여기서 뜬다.
+	// 응답 식별자는 generationId 가 아니라 id 다(명세서와 실물이 달라 둘 다 받는다).
+	const acceptedIdOf = (accepted) => accepted?.id ?? accepted?.generationId ?? null;
+
 	const runGeneration = async () => {
 		const result = await progress.track(async () => {
 			const accepted = await createGeneration({
 				jobPostingId,
 				style: preferences.style || undefined,
 			});
-			setGenerationId(accepted.generationId);
-			return accepted.generationId;
+			const id = acceptedIdOf(accepted);
+			setGenerationId(id);
+			return id;
 		});
 
 		applyGeneration(result);
@@ -373,8 +377,13 @@ function DraftResultPage() {
 		if (generationId === null) return;
 
 		const result = await progress.track(async () => {
-			await regenerateGeneration(generationId);
-			return generationId;
+			// 재생성은 기존 id 를 다시 채우는 게 아니라 새 id 로 만들어진다.
+			// 예전처럼 원래 id 를 계속 보면 이미 끝난 옛 결과를 보고 곧장
+			// '완료' 로 판정해 버리므로, 응답이 준 새 id 로 갈아탄다.
+			const accepted = await regenerateGeneration(generationId);
+			const nextId = acceptedIdOf(accepted) ?? generationId;
+			setGenerationId(nextId);
+			return nextId;
 		});
 
 		applyGeneration(result);
