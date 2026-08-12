@@ -74,6 +74,10 @@ const HelperText = styled.p`
 	color: ${({ theme }) => theme.colors.textMuted};
 `;
 
+// pollUntil 기본값(90초)은 AI가 채용공고를 읽고 요약하는 작업엔 짧다.
+// 결과물 생성(useGenerationProgress.js)과 같은 값으로 맞춰 둔다.
+const ANALYSIS_TIMEOUT = 5 * 60 * 1000;
+
 const MODES = [
 	{ key: 'url', label: '링크로 입력' },
 	{ key: 'text', label: '텍스트 붙여넣기' },
@@ -142,9 +146,13 @@ function JobPostingPage() {
 			setJobPostingId(id);
 
 			// 분석은 접수(PENDING)만 먼저 오고 결과는 나중에 채워진다.
+			// pollUntil 기본 타임아웃(90초)은 AI가 채용공고를 읽고 요약하는
+			// 작업엔 짧다. 결과물 생성과 같은 값으로 맞춰 뒀다 — 백엔드에
+			// 실제 소요 시간을 확인하면 그 값에 맞춘다.
 			const finished = await pollUntil(
 				() => getJobPosting(id),
 				(data) => isSettled(data.status),
+				{ timeout: ANALYSIS_TIMEOUT },
 			);
 
 			if (finished.status === 'FAILED') {
