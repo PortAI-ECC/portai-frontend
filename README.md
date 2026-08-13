@@ -8,8 +8,9 @@ Velog/Notion 등의 기술블로그, GitHub 프로젝트, 활동 이력 등을 �
 
 ## 🌐 배포
 
-- 빌드 결과(`dist/`)를 Netlify에 업로드 : https://portai-frontend0.netlify.app (테스트 배포)
-- CI/CD(GitHub Actions 등)를 설정하면 자동 빌드/배포도 가능합니다.
+- Netlify배포 : https://ecc-portai.netlify.app
+
+- [![Netlify Status](https://api.netlify.com/api/v1/badges/cd9665ad-cf32-4f9e-a6df-52a131422dce/deploy-status)](https://app.netlify.com/projects/ecc-portai/deploys)
 
 ---
 
