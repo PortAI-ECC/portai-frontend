@@ -205,7 +205,7 @@ function SignUpPage() {
 							name="password"
 							type="password"
 							autoComplete="new-password"
-							placeholder="••••••••"
+							placeholder="8자 이상 입력하세요"
 							minLength={8}
 							value={form.password}
 							onChange={handleChange}
@@ -219,7 +219,7 @@ function SignUpPage() {
 							name="passwordConfirm"
 							type="password"
 							autoComplete="new-password"
-							placeholder="••••••••"
+							placeholder="비밀번호를 다시 입력하세요"
 							value={form.passwordConfirm}
 							onChange={handleChange}
 							required

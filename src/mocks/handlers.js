@@ -114,6 +114,38 @@ const nextIdFor = (path) => {
 const recordHandlers = RECORD_SPECS.flatMap((spec) => {
 	const collection = () => state[spec.listKey];
 
+	// 활동이력만 실서버에서 /api 밖(루트)에 있고 목록도 /me 로 따로 논다.
+	// 목 서버도 같은 모양이어야 화면 코드를 그대로 검증할 수 있다.
+	if (spec.path === 'activities') {
+		return [
+			http.get('/activities/me', () => HttpResponse.json(collection())),
+			http.post('/activities', async ({ request }) => {
+				const payload = await request.json();
+				if (!payload?.[spec.requiredField]?.trim?.()) {
+					return fail(400, 'VALIDATION_ERROR', spec.requiredMessage);
+				}
+				const item = { [spec.idField]: nextIdFor(spec.path), ...payload };
+				collection().push(item);
+				return HttpResponse.json(
+					{ [spec.idField]: item[spec.idField], message: `${spec.label}이(가) 등록되었습니다.` },
+					{ status: 201 },
+				);
+			}),
+			http.put('/activities/:id', async ({ params, request }) => {
+				const item = collection().find((row) => row[spec.idField] === Number(params.id));
+				if (!item) return fail(404, spec.errorCode, `해당 ${spec.label}을(를) 찾을 수 없습니다.`);
+				Object.assign(item, await request.json());
+				return HttpResponse.json({ message: `${spec.label}이(가) 수정되었습니다.`, ...item });
+			}),
+			http.delete('/activities/:id', ({ params }) => {
+				const index = collection().findIndex((row) => row[spec.idField] === Number(params.id));
+				if (index === -1) return fail(404, spec.errorCode, `해당 ${spec.label}을(를) 찾을 수 없습니다.`);
+				collection().splice(index, 1);
+				return HttpResponse.json({ message: `${spec.label}이(가) 삭제되었습니다.` });
+			}),
+		];
+	}
+
 	return [
 		http.get(`/api/${spec.path}`, () => HttpResponse.json({ [spec.listKey]: collection() })),
 
@@ -533,7 +565,7 @@ export const handlers = [
 		);
 	}),
 
-	http.post('/api/job-postings/file', async ({ request }) => {
+	http.post('/api/job-postings/pdf', async ({ request }) => {
 		const formData = await request.formData();
 		const file = formData.get('file');
 
@@ -648,7 +680,8 @@ export const handlers = [
 		});
 	}),
 
-	http.get('/api/generations/:generationId/download', ({ params }) => {
+	// 다운로드는 결과물 종류별로 나뉜다.
+	http.get('/api/generations/:generationId/results/:type/download', ({ params }) => {
 		const generation = state.generations.find(
 			(item) => item.generationId === Number(params.generationId),
 		);
@@ -657,6 +690,7 @@ export const handlers = [
 		}
 
 		const body = generation.results
+			.filter((result) => result.type === params.type)
 			.map((result) => `## ${result.type}\n${result.content}`)
 			.join('\n\n');
 

@@ -144,10 +144,11 @@ function LinksPage() {
 		if (!isLoggedIn) return;
 
 		getIntegrations()
-			.then((data) => {
+			.then((items) => {
 				setLinks(
-					(data.integrations ?? []).map((item) => ({
-						id: item.integrationId,
+					items.map((item) => ({
+						// 식별자는 integrationId 로 오기도 하고 id 로 오기도 한다.
+						id: item.integrationId ?? item.id,
 						url: item.value,
 						hostname: parseUrl(item.value)?.hostname ?? item.value,
 						platform: item.platform,
@@ -220,7 +221,7 @@ function LinksPage() {
 				value: url.trim(),
 			});
 			addLink({
-				id: created.integrationId,
+				id: created.integrationId ?? created.id,
 				url: url.trim(),
 				hostname: parsed.hostname,
 				platform: created.platform ?? parsed.platform,

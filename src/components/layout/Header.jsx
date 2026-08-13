@@ -119,8 +119,9 @@ function Header() {
 		}
 
 		// 로그인·회원가입 화면에서 같은 곳으로 가는 버튼은 의미가 없으니 홈으로 보낸다.
+		// 이 두 화면은 머리말이 'Sign in' / 'Create account' 라 버튼도 영문으로 맞춘다.
 		if (isSignUp || isLogin) {
-			return <Button onClick={() => navigate(ROUTES.HOME)}>홈</Button>;
+			return <Button onClick={() => navigate(ROUTES.HOME)}>Home</Button>;
 		}
 
 		// 위자드 도중이면 회원가입보다 로그인이 먼저다. 로그인 뒤 하던 자리로 돌아온다.

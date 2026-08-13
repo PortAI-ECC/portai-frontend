@@ -28,20 +28,29 @@ const Footer = styled.footer`
 	gap: 16px;
 `;
 
+// 주 동작(오른쪽)보다 약해야 하지만, 옅은 글자만 두니 잘 안 보인다는 피드백을
+// 받아 테두리 있는 버튼 모양으로 올린다. 색은 채우지 않아 위계는 그대로 둔다.
 const BackLink = styled.button`
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
+	height: 44px;
+	padding: 0 20px;
+	border-radius: ${({ theme }) => theme.radii.pill};
+	border: 1px solid ${({ theme }) => theme.colors.border};
+	background: ${({ theme }) => theme.colors.surface};
 	font-size: 14px;
-	color: ${({ theme }) => theme.colors.textMuted};
-	opacity: 0.7;
+	font-weight: 700;
+	color: ${({ theme }) => theme.colors.textSub};
 	transition:
-		opacity 0.15s,
+		background 0.15s,
+		border-color 0.15s,
 		color 0.15s;
 
 	&:hover {
-		opacity: 1;
-		color: ${({ theme }) => theme.colors.textSub};
+		background: ${({ theme }) => theme.colors.surfaceSolid};
+		border-color: ${({ theme }) => theme.colors.primary};
+		color: ${({ theme }) => theme.colors.primary};
 	}
 `;
 

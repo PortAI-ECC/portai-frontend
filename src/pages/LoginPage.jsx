@@ -123,7 +123,7 @@ function LoginPage() {
 							name="password"
 							type="password"
 							autoComplete="current-password"
-							placeholder="••••••••"
+							placeholder="비밀번호를 입력하세요"
 							value={form.password}
 							onChange={handleChange}
 							required

@@ -111,7 +111,18 @@ function FinalPreviewPage() {
 				<Button variant="secondary" size="lg" onClick={() => navigate(ROUTES.CREATE_DRAFT)}>
 					이전으로
 				</Button>
-				<Button size="lg" onClick={() => navigate(ROUTES.CREATE_DONE)}>
+				{/* 배포 완료 화면은 들어가자마자 위자드를 비우므로, 거기서도 계속
+				    필요한 결과물 id 는 주소에 실어 보낸다(새로고침에도 살아남게). */}
+				<Button
+					size="lg"
+					onClick={() =>
+						navigate(
+							generationId === null
+								? ROUTES.CREATE_DONE
+								: `${ROUTES.CREATE_DONE}?id=${generationId}`,
+						)
+					}
+				>
 					완료
 				</Button>
 			</Actions>

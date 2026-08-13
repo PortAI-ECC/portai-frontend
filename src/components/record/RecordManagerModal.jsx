@@ -11,6 +11,7 @@ import { RECORD_APIS, techStacksApi } from '../../api/records';
 import { generateDescription, getProject, projectsApi, uploadAttachment } from '../../api/projects';
 import { messageOf } from '../../api/client';
 import { RECORD_FIELDS, RECORD_ID_FIELD, RECORD_SUMMARY } from '../../constants/recordFields';
+import { visuallyHidden } from '../../styles/controlStyle';
 
 const List = styled.ul`
 	display: flex;
@@ -112,10 +113,16 @@ const UploadLabel = styled.label`
 	&:hover {
 		color: ${({ theme }) => theme.colors.primary};
 	}
+
+	/* 감춰 둔 입력이 탭으로 포커스를 받으면 이 라벨에 테두리를 그려 준다. */
+	&:focus-within {
+		outline: 2px solid ${({ theme }) => theme.colors.primary};
+		outline-offset: 2px;
+	}
 `;
 
 const HiddenFileInput = styled.input`
-	display: none;
+	${visuallyHidden}
 `;
 
 const Empty = styled.p`

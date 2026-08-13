@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Button from '../../components/common/Button';
 import { ROUTES } from '../../constants/routes';
@@ -26,11 +26,14 @@ const Title = styled.h1`
 	margin-bottom: 40px;
 `;
 
-// URL 줄 아래는 남는 세로 공간을 전부 비운다.
+// URL 줄(과 복사 실패 안내) 아래는 남는 세로 공간을 전부 비운다.
+const UrlSection = styled.div`
+	margin-bottom: auto;
+`;
+
 const UrlRow = styled.div`
 	display: flex;
 	gap: 16px;
-	margin-bottom: auto;
 `;
 
 const UrlBox = styled.p`
@@ -105,6 +108,11 @@ const ErrorText = styled.p`
 	color: ${({ theme }) => theme.colors.danger};
 `;
 
+const CopyErrorText = styled(ErrorText)`
+	margin-top: 12px;
+	text-align: left;
+`;
+
 const Hint = styled.p`
 	font-size: 13px;
 	color: ${({ theme }) => theme.colors.textMuted};
@@ -125,13 +133,20 @@ function DeployedPage() {
 	const reset = useCreateFlowStore((state) => state.reset);
 
 	const [copied, setCopied] = useState(false);
+	const [copyError, setCopyError] = useState('');
 	const [downloading, setDownloading] = useState(false);
 	const [downloadError, setDownloadError] = useState('');
 
 	// 배포까지 끝났으면 이 위자드는 여기서 완결이다. 입력값과 '어디까지 가봤는지'를
 	// 비워 둬야, 다음에 '새로 만들기'로 들어왔을 때 1단계부터 다시 밟게 된다.
-	// 스토어를 비우기 전에 이 화면이 계속 써야 할 값은 처음 값 그대로 붙잡아 둔다.
-	const [downloadableId] = useState(generationId);
+	//
+	// 다만 이 화면은 스토어를 비운 뒤에도 결과물 id 가 계속 필요하다(PDF 내려받기).
+	// 첫 렌더 값만 붙잡아 두면 새로고침했을 때는 이미 비워진 뒤라 id 를 잃는다.
+	// 그래서 앞 화면이 주소로 넘겨준 id 를 먼저 보고, 없을 때만 스토어를 쓴다.
+	const [searchParams] = useSearchParams();
+	const idFromUrl = Number(searchParams.get('id')) || null;
+	const [idFromStore] = useState(generationId);
+	const downloadableId = idFromUrl ?? idFromStore;
 
 	useEffect(() => {
 		reset();
@@ -139,10 +154,18 @@ function DeployedPage() {
 
 	const portfolioUrl = `${window.location.origin}/u/username`;
 
+	// 클립보드는 https(또는 localhost)가 아니거나 권한이 막히면 그냥 실패한다.
+	// 조용히 넘어가면 사용자는 복사된 줄 알기 때문에 실패도 화면에 알린다.
 	const handleCopy = async () => {
-		await navigator.clipboard.writeText(portfolioUrl);
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
+		setCopyError('');
+
+		try {
+			await navigator.clipboard.writeText(portfolioUrl);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		} catch {
+			setCopyError('복사하지 못했어요. 위 주소를 직접 선택해 복사해 주세요.');
+		}
 	};
 
 	// 서버가 파일 본문(blob)을 그대로 내려주므로 링크를 만들어 눌러 준다.
@@ -153,7 +176,8 @@ function DeployedPage() {
 		setDownloadError('');
 
 		try {
-			const blob = await downloadFile(downloadableId);
+			// 다운로드는 결과물 종류별로 나뉜다. 이 버튼이 주는 건 이력서다.
+			const blob = await downloadFile(downloadableId, 'RESUME');
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement('a');
 
@@ -174,12 +198,15 @@ function DeployedPage() {
 		<Wrapper>
 			<Title>배포 완료 🎉</Title>
 
-			<UrlRow>
-				<UrlBox>{portfolioUrl}</UrlBox>
-				<Button size="lg" onClick={handleCopy}>
-					{copied ? '복사됨!' : 'URL 복사하기'}
-				</Button>
-			</UrlRow>
+			<UrlSection>
+				<UrlRow>
+					<UrlBox>{portfolioUrl}</UrlBox>
+					<Button size="lg" onClick={handleCopy}>
+						{copied ? '복사됨!' : 'URL 복사하기'}
+					</Button>
+				</UrlRow>
+				{copyError && <CopyErrorText role="alert">{copyError}</CopyErrorText>}
+			</UrlSection>
 
 			<Actions>
 				{/* PDF 는 서버가 만들어 둔 결과물을 받아오는 것이라, 결과물이 서버에

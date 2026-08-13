@@ -150,7 +150,7 @@ function MyPage() {
 
 	useEffect(() => {
 		getGenerations()
-			.then((data) => setGenerations(data.items ?? data.generations ?? data))
+			.then(setGenerations)
 			.catch(() => setFailed(true));
 	}, []);
 
@@ -244,13 +244,15 @@ function MyPage() {
 
 					{generations?.length > 0 && (
 						<SiteGrid>
-							{/* 식별자는 명세서 응답 그대로 generationId 다. */}
+							{/* 실제 응답 식별자는 id 다. 명세서엔 generationId 라 둘 다 받는다. */}
 							{generations.map((item) => (
-								<SiteCard key={item.generationId}>
+								<SiteCard key={item.id ?? item.generationId}>
 									<Thumbnail
 										as="button"
 										type="button"
-										onClick={() => handleOpenSite(item.generationId)}
+										onClick={() =>
+											handleOpenSite(item.id ?? item.generationId)
+										}
 									/>
 									<SiteName>{item.title ?? '제목 없는 포트폴리오'}</SiteName>
 								</SiteCard>
