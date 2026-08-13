@@ -1,0 +1,140 @@
+// 분류별 입력 폼 정의. 필드명은 API 명세서의 요청 본문 키를 그대로 쓰고,
+// select 의 값은 DB 명세서(CREATE TABLE)의 ENUM 을 따른다.
+//
+// 주의: 기술스택 category/proficiency 는 API 명세서 예시(BACKEND / DESIGN / EXPERT)와
+// DB 명세서 ENUM(LANGUAGE·FRAMEWORK·… / BEGINNER·INTERMEDIATE·ADVANCED)이 서로 다르다.
+// 여기서는 CREATE TABLE 쪽을 따랐고, 백엔드 확인 후 한쪽으로 맞춰야 한다.
+
+const DEGREE_OPTIONS = [
+	{ value: 'ASSOCIATE', label: '전문학사' },
+	{ value: 'BACHELOR', label: '학사' },
+	{ value: 'MASTER', label: '석사' },
+	{ value: 'DOCTORATE', label: '박사' },
+];
+
+const EDUCATION_STATUS_OPTIONS = [
+	{ value: 'ENROLLED', label: '재학' },
+	{ value: 'ON_LEAVE', label: '휴학' },
+	{ value: 'GRADUATED', label: '졸업' },
+	{ value: 'EXPECTED_GRADUATION', label: '졸업 예정' },
+];
+
+const TECH_CATEGORY_OPTIONS = [
+	{ value: 'LANGUAGE', label: '언어' },
+	{ value: 'FRAMEWORK', label: '프레임워크' },
+	{ value: 'DATABASE', label: '데이터베이스' },
+	{ value: 'CLOUD', label: '클라우드' },
+	{ value: 'TOOL', label: '도구' },
+	{ value: 'OTHER', label: '기타' },
+];
+
+const PROFICIENCY_OPTIONS = [
+	{ value: 'BEGINNER', label: '초급' },
+	{ value: 'INTERMEDIATE', label: '중급' },
+	{ value: 'ADVANCED', label: '고급' },
+];
+
+const TEAM_TYPE_OPTIONS = [
+	{ value: 'PERSONAL', label: '개인' },
+	{ value: 'TEAM', label: '팀' },
+];
+
+export const RECORD_FIELDS = {
+	projects: [
+		{ name: 'name', label: '프로젝트명', required: true },
+		{ name: 'startDate', label: '시작일', type: 'date' },
+		{ name: 'endDate', label: '종료일', type: 'date' },
+		{ name: 'teamType', label: '팀/개인', type: 'select', options: TEAM_TYPE_OPTIONS },
+		{ name: 'role', label: '담당 역할' },
+		{ name: 'githubUrl', label: 'GitHub 저장소', placeholder: 'https://github.com/...' },
+		{ name: 'myContribution', label: '가장 기여한 부분', type: 'textarea' },
+		{ name: 'proudestAchievement', label: '가장 자랑하고 싶은 성과', type: 'textarea' },
+		{ name: 'description', label: '프로젝트 설명 (AI 생성 가능)', type: 'textarea' },
+	],
+	contests: [
+		{ name: 'name', label: '공모전명', required: true },
+		{ name: 'host', label: '주최 기관' },
+		{ name: 'startDate', label: '시작일', type: 'date' },
+		{ name: 'endDate', label: '종료일', type: 'date' },
+		{ name: 'role', label: '담당 역할' },
+		{ name: 'result', label: '결과', placeholder: '예: 대상 수상' },
+		{ name: 'awarded', label: '수상 여부', type: 'checkbox' },
+	],
+	careers: [
+		{ name: 'companyName', label: '회사명', required: true },
+		{ name: 'position', label: '직무' },
+		{ name: 'startDate', label: '시작일', type: 'date' },
+		{ name: 'endDate', label: '종료일', type: 'date' },
+		{ name: 'duties', label: '담당 업무', type: 'textarea' },
+		{ name: 'achievements', label: '성과', type: 'textarea' },
+	],
+	certificates: [
+		{ name: 'name', label: '자격증명', required: true },
+		{ name: 'issuer', label: '발급기관' },
+		{ name: 'acquiredDate', label: '취득일', type: 'date' },
+		{ name: 'expiryDate', label: '만료일', type: 'date' },
+		{ name: 'score', label: '점수/등급', placeholder: '예: TOEIC 950' },
+	],
+	education: [
+		{ name: 'school', label: '학교명', required: true },
+		{ name: 'degree', label: '학위', type: 'select', options: DEGREE_OPTIONS },
+		{ name: 'major', label: '전공' },
+		{ name: 'doubleMajor', label: '복수/부전공' },
+		{ name: 'gpaScore', label: '취득 학점', type: 'number', step: '0.01' },
+		{ name: 'gpaScale', label: '만점 기준', type: 'number', step: '0.01' },
+		{ name: 'status', label: '재학 상태', type: 'select', options: EDUCATION_STATUS_OPTIONS },
+		{ name: 'expectedGraduation', label: '졸업(예정)일', type: 'date' },
+	],
+	techStacks: [
+		{ name: 'name', label: '기술명', required: true, placeholder: '예: React' },
+		{ name: 'category', label: '분류', type: 'select', options: TECH_CATEGORY_OPTIONS },
+		{ name: 'proficiency', label: '숙련도', type: 'select', options: PROFICIENCY_OPTIONS },
+	],
+	activities: [
+		{ name: 'name', label: '활동명', required: true },
+		{ name: 'startDate', label: '시작일', type: 'date' },
+		{ name: 'endDate', label: '종료일', type: 'date' },
+		{ name: 'role', label: '담당 역할' },
+		{ name: 'description', label: '한 일', type: 'textarea' },
+	],
+};
+
+/** 리소스마다 식별자 필드명이 다르다(명세서 응답 기준). */
+export const RECORD_ID_FIELD = {
+	projects: 'projectId',
+	contests: 'contestId',
+	careers: 'careerId',
+	certificates: 'certificateId',
+	education: 'educationId',
+	techStacks: 'skillId',
+	activities: 'activityId',
+};
+
+/** 목록 한 줄에 크게 보여줄 대표 필드와 그 아래 보조 설명. */
+export const RECORD_SUMMARY = {
+	projects: {
+		title: 'name',
+		subtitle: (item) => [item.role, item.startDate].filter(Boolean).join(' · '),
+	},
+	contests: { title: 'name', subtitle: (item) => [item.host, item.result].filter(Boolean).join(' · ') },
+	careers: {
+		title: 'companyName',
+		subtitle: (item) => [item.position, item.startDate].filter(Boolean).join(' · '),
+	},
+	certificates: {
+		title: 'name',
+		subtitle: (item) => [item.issuer, item.acquiredDate].filter(Boolean).join(' · '),
+	},
+	education: {
+		title: 'school',
+		subtitle: (item) => [item.major, item.expectedGraduation].filter(Boolean).join(' · '),
+	},
+	techStacks: {
+		title: 'name',
+		subtitle: (item) => [item.category, item.proficiency].filter(Boolean).join(' · '),
+	},
+	activities: {
+		title: 'name',
+		subtitle: (item) => [item.role, item.startDate].filter(Boolean).join(' · '),
+	},
+};
