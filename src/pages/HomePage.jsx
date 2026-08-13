@@ -107,6 +107,18 @@ const ErrorText = styled.p`
 	color: ${({ theme }) => theme.colors.danger};
 `;
 
+// 로그인 화면(LoginPage)의 회원가입 안내와 같은 모양으로 맞춘다.
+const SignUpRow = styled.p`
+	font-size: 14px;
+	color: ${({ theme }) => theme.colors.textSub};
+	text-align: center;
+`;
+
+const SignUpLink = styled.button`
+	font-weight: 700;
+	color: ${({ theme }) => theme.colors.primary};
+`;
+
 // 로그인 상태에서 홈에 오면 로그인 폼 대신 이 카드가 같은 자리·크기로 뜬다.
 const ProfileBody = styled.div`
 	display: flex;
@@ -183,7 +195,7 @@ const PROFILE_FIELDS = [
 	{ key: 'introOneLiner', label: '한 줄 소개' },
 ];
 
-function LoginCard({ form, error, submitting, onChange, onSubmit, onGuest }) {
+function LoginCard({ form, error, submitting, onChange, onSubmit, onGuest, onSignUp }) {
 	return (
 		<Form onSubmit={onSubmit}>
 			<CardTitle>로그인</CardTitle>
@@ -207,7 +219,7 @@ function LoginCard({ form, error, submitting, onChange, onSubmit, onGuest }) {
 					name="password"
 					type="password"
 					autoComplete="current-password"
-					placeholder="••••••••"
+					placeholder="비밀번호를 입력하세요"
 					value={form.password}
 					onChange={onChange}
 					required
@@ -219,6 +231,15 @@ function LoginCard({ form, error, submitting, onChange, onSubmit, onGuest }) {
 			<Button type="submit" size="lg" fullWidth disabled={submitting}>
 				{submitting ? '로그인 중...' : '로그인'}
 			</Button>
+
+			{/* 헤더의 회원가입은 카드에서 멀어 눈에 안 띈다는 피드백을 받아,
+			    로그인 화면과 같은 자리에 카드 안쪽으로 들여왔다. */}
+			<SignUpRow>
+				계정이 없으신가요?{' '}
+				<SignUpLink type="button" onClick={onSignUp}>
+					회원가입
+				</SignUpLink>
+			</SignUpRow>
 
 			<FooterLink type="button" onClick={onGuest}>
 				비로그인으로 진행 →
@@ -343,6 +364,7 @@ function HomePage() {
 						onChange={handleChange}
 						onSubmit={handleSubmit}
 						onGuest={() => navigate(ROUTES.CREATE_BASIC)}
+						onSignUp={() => navigate(ROUTES.SIGNUP)}
 					/>
 				)}
 			</Card>
