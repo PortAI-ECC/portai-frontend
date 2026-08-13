@@ -103,6 +103,10 @@ const PLATFORM_BY_HOST = [
 const parseUrl = (value) => {
 	try {
 		const url = new URL(value);
+		// new URL 은 javascript: · ftp: 같은 것도 통과시킨다. 안내 문구대로
+		// 웹 주소만 받도록 여기서 한 번 더 거른다.
+		if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+
 		const platform = PLATFORM_BY_HOST.find(([re]) => re.test(url.hostname))?.[1] ?? 'ETC';
 		return { hostname: url.hostname, platform };
 	} catch {
@@ -118,6 +122,11 @@ const STATUS_LABEL = {
 };
 
 const isCollecting = (status) => status === 'PENDING' || status === 'IN_PROGRESS';
+
+// 수집 상태를 물어보는 주기와, 끝나지 않을 때 포기하는 시점.
+// 분석·생성 폴링(5분)과 같은 상한으로 맞춰 둔다.
+const SYNC_POLL_INTERVAL = 2000;
+const SYNC_POLL_TIMEOUT = 5 * 60 * 1000;
 
 function LinksPage() {
 	const navigate = useNavigate();
@@ -171,8 +180,13 @@ function LinksPage() {
 		if (!isLoggedIn || !collectingKey) return undefined;
 
 		const ids = collectingKey.split(',');
+		const startedAt = Date.now();
+		let timer = null;
+		let stopped = false;
 
-		const timer = setInterval(async () => {
+		// setInterval 로 두면 응답이 느릴 때 요청이 겹쳐 쌓인다.
+		// 한 번 끝나고 나서 다음을 예약한다.
+		const tick = async () => {
 			const settled = await Promise.all(
 				ids.map((id) =>
 					getSyncStatus(id)
@@ -180,6 +194,8 @@ function LinksPage() {
 						.catch(() => null),
 				),
 			);
+			if (stopped) return;
+
 			const nextStatus = Object.fromEntries(settled.filter(Boolean));
 
 			// 폴링 중에 목록이 바뀌었을 수 있어 최신 상태를 스토어에서 다시 읽는다.
@@ -190,9 +206,23 @@ function LinksPage() {
 						nextStatus[link.id] ? { ...link, status: nextStatus[link.id] } : link,
 					),
 			);
-		}, 2000);
 
-		return () => clearInterval(timer);
+			// 수집이 끝나지 않으면 화면을 열어 둔 내내 물어보게 된다.
+			// 일정 시간이 지나면 멈추고 사람이 다시 확인하게 안내한다.
+			if (Date.now() - startedAt > SYNC_POLL_TIMEOUT) {
+				setError('수집이 오래 걸리고 있어요. 잠시 후 새로고침해서 확인해 주세요.');
+				return;
+			}
+
+			timer = setTimeout(tick, SYNC_POLL_INTERVAL);
+		};
+
+		timer = setTimeout(tick, SYNC_POLL_INTERVAL);
+
+		return () => {
+			stopped = true;
+			clearTimeout(timer);
+		};
 	}, [isLoggedIn, collectingKey, setLinks]);
 
 	const handleAdd = async (event) => {
