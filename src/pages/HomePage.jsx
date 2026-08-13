@@ -102,6 +102,12 @@ const FooterLink = styled.button`
 	}
 `;
 
+// 회원가입 안내와 붙어 보여서 따로 떼어 둔다. 로그인/회원가입과는 결이 다른
+// '인증을 건너뛴다'는 선택이라, 사이를 벌려 다른 갈래로 읽히게 한다.
+const GuestLink = styled(FooterLink)`
+	margin-top: 12px;
+`;
+
 const ErrorText = styled.p`
 	font-size: 13px;
 	color: ${({ theme }) => theme.colors.danger};
@@ -241,9 +247,9 @@ function LoginCard({ form, error, submitting, onChange, onSubmit, onGuest, onSig
 				</SignUpLink>
 			</SignUpRow>
 
-			<FooterLink type="button" onClick={onGuest}>
+			<GuestLink type="button" onClick={onGuest}>
 				비로그인으로 진행 →
-			</FooterLink>
+			</GuestLink>
 		</Form>
 	);
 }

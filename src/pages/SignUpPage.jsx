@@ -194,12 +194,9 @@ function SignUpPage() {
 						/>
 					</Field>
 
-					<Field
-						label="비밀번호"
-						htmlFor="password"
-						message="8자 이상 입력해 주세요."
-						required
-					>
+					{/* 입력칸 안내글이 이미 '8자 이상 입력하세요' 라, 아래에 같은 말을
+					    또 두면 겹쳐 읽힌다. 안내는 placeholder 하나로 둔다. */}
+					<Field label="비밀번호" htmlFor="password" required>
 						<Input
 							id="password"
 							name="password"

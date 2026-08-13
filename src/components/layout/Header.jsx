@@ -133,13 +133,11 @@ function Header() {
 			);
 		}
 
-		return isHome ? (
-			<NavLink type="button" onClick={() => navigate(ROUTES.SIGNUP)}>
-				회원가입
-			</NavLink>
-		) : (
-			<Button onClick={() => navigate(ROUTES.SIGNUP)}>회원가입</Button>
-		);
+		// 홈은 로그인 카드 안에 회원가입 링크가 따로 있어, 헤더에까지 두면
+		// 같은 곳으로 가는 입구가 둘이 된다. 카드 쪽 하나만 남긴다.
+		if (isHome) return null;
+
+		return <Button onClick={() => navigate(ROUTES.SIGNUP)}>회원가입</Button>;
 	};
 
 	return (
