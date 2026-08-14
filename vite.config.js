@@ -5,7 +5,10 @@ import babel from '@rolldown/plugin-babel';
 
 // https://vite.dev/config/
 export default defineConfig({
-	plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
+	plugins: [
+		react(),
+		babel({ presets: [reactCompilerPreset()], plugins: ['@emotion/babel-plugin'] }),
+	],
 	server: {
 		proxy: {
 			// VITE_API_BASE_URL 을 따로 주지 않으면 /api 요청을 로컬 백엔드로 넘긴다.
