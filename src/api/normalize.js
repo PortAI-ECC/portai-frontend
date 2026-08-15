@@ -9,6 +9,8 @@
 
 const toCamel = (key) => key.replace(/_([a-z0-9])/g, (_, char) => char.toUpperCase());
 
+const toSnake = (key) => key.replace(/[A-Z]/g, (char) => `_${char.toLowerCase()}`);
+
 /**
  * 응답 필드가 snake_case 로 온다(source_type, overall_status, skill_id...).
  * Swagger 와 Notion 명세서는 camelCase 라 둘이 다르다. 어느 쪽이 와도
@@ -24,6 +26,28 @@ export function camelizeKeys(value) {
 
 	return Object.fromEntries(
 		Object.entries(value).map(([key, item]) => [toCamel(key), camelizeKeys(item)]),
+	);
+}
+
+/**
+ * 요청 본문은 반대로 snake_case 로 보내야 한다.
+ *
+ * Swagger(/v3/api-docs)는 요청 스키마를 camelCase 로 그려 주지만 실물 서버는
+ * snake_case 만 읽는다. 문서와 실물이 달라 실호출로만 드러난 차이다(2026-08-15 확인).
+ * 게다가 증상이 필드마다 갈린다 — 필수 필드면 400, 선택 필드면 200 을 주고 조용히
+ * 버린다. 한 군데서 변환해 두지 않으면 화면마다 다른 얼굴로 새어 나온다.
+ *
+ * 값은 건드리지 않고 키만 바꾼다. FormData·File 같은 건 그대로 흘려보낸다.
+ */
+export function snakeizeKeys(value) {
+	if (Array.isArray(value)) return value.map(snakeizeKeys);
+
+	if (value === null || typeof value !== 'object' || value.constructor !== Object) {
+		return value;
+	}
+
+	return Object.fromEntries(
+		Object.entries(value).map(([key, item]) => [toSnake(key), snakeizeKeys(item)]),
 	);
 }
 

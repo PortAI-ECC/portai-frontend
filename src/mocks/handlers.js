@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { camelizeKeys } from '../api/normalize';
 
 // 백엔드가 뜨기 전에도 화면을 돌려볼 수 있게 하는 목 데이터.
 // 응답 형태는 Notion API 명세서의 각 엔드포인트 상세 페이지를 그대로 따른다.
@@ -7,6 +8,12 @@ import { http, HttpResponse } from 'msw';
 // 본문이 아직 비어 있어, DB 명세서(job_postings / generations / generation_results
 // 테이블)의 컬럼을 camelCase 로 옮긴 잠정 형태다. 백엔드 스키마가 확정되면
 // 이 파일과 각 페이지의 응답 파싱부만 고치면 된다.
+/**
+ * 클라이언트는 실서버에 맞춰 요청 본문을 snake_case 로 보낸다(client.js 요청 인터셉터).
+ * 목 핸들러는 camelCase 로 읽도록 쓰여 있으므로 들어올 때 되돌려 준다.
+ */
+const body = async (request) => camelizeKeys(await request.json());
+
 const users = new Map();
 let nextUserId = 1;
 let nextIntegrationId = 1;
@@ -120,7 +127,7 @@ const recordHandlers = RECORD_SPECS.flatMap((spec) => {
 		return [
 			http.get('/activities/me', () => HttpResponse.json(collection())),
 			http.post('/activities', async ({ request }) => {
-				const payload = await request.json();
+				const payload = await body(request);
 				if (!payload?.[spec.requiredField]?.trim?.()) {
 					return fail(400, 'VALIDATION_ERROR', spec.requiredMessage);
 				}
@@ -134,7 +141,7 @@ const recordHandlers = RECORD_SPECS.flatMap((spec) => {
 			http.put('/activities/:id', async ({ params, request }) => {
 				const item = collection().find((row) => row[spec.idField] === Number(params.id));
 				if (!item) return fail(404, spec.errorCode, `해당 ${spec.label}을(를) 찾을 수 없습니다.`);
-				Object.assign(item, await request.json());
+				Object.assign(item, await body(request));
 				return HttpResponse.json({ message: `${spec.label}이(가) 수정되었습니다.`, ...item });
 			}),
 			http.delete('/activities/:id', ({ params }) => {
@@ -150,7 +157,7 @@ const recordHandlers = RECORD_SPECS.flatMap((spec) => {
 		http.get(`/api/${spec.path}`, () => HttpResponse.json({ [spec.listKey]: collection() })),
 
 		http.post(`/api/${spec.path}`, async ({ request }) => {
-			const payload = await request.json();
+			const payload = await body(request);
 
 			if (!payload?.[spec.requiredField]?.trim?.()) {
 				return fail(400, 'VALIDATION_ERROR', spec.requiredMessage);
@@ -182,7 +189,7 @@ const recordHandlers = RECORD_SPECS.flatMap((spec) => {
 				return fail(404, spec.errorCode, `해당 ${spec.label}을(를) 찾을 수 없습니다.`);
 			}
 
-			const patch = await request.json();
+			const patch = await body(request);
 			Object.assign(item, patch);
 
 			return HttpResponse.json({
@@ -246,7 +253,7 @@ const startGeneration = (generation) => {
 export const handlers = [
 	// ── 인증 ────────────────────────────────────────────
 	http.post('/api/auth/signup', async ({ request }) => {
-		const { name, email, password, phone } = await request.json();
+		const { name, email, password, phone } = await body(request);
 
 		if (users.has(email)) {
 			return fail(409, 'EMAIL_ALREADY_EXISTS', '이미 가입된 이메일입니다.');
@@ -261,7 +268,7 @@ export const handlers = [
 	}),
 
 	http.post('/api/auth/login', async ({ request }) => {
-		const { email, password } = await request.json();
+		const { email, password } = await body(request);
 		const user = users.get(email);
 
 		if (!user || user.password !== password) {
@@ -287,7 +294,7 @@ export const handlers = [
 	http.post('/api/auth/logout', () => HttpResponse.json({ message: '로그아웃 되었습니다.' })),
 
 	http.post('/api/auth/refresh', async ({ request }) => {
-		const { refreshToken } = await request.json();
+		const { refreshToken } = await body(request);
 		if (refreshToken !== REFRESH_TOKEN) {
 			return fail(401, 'EXPIRED_REFRESH_TOKEN', '리프레시 토큰이 만료되었습니다.');
 		}
@@ -298,7 +305,7 @@ export const handlers = [
 	http.get('/api/profile', () => HttpResponse.json(state.profile)),
 
 	http.patch('/api/profile', async ({ request }) => {
-		const patch = await request.json();
+		const patch = await body(request);
 		Object.assign(state.profile, patch);
 		return HttpResponse.json({
 			message: '프로필이 수정되었습니다.',
@@ -311,7 +318,7 @@ export const handlers = [
 	http.get('/api/preferences', () => HttpResponse.json(state.preferences)),
 
 	http.patch('/api/preferences', async ({ request }) => {
-		const patch = await request.json();
+		const patch = await body(request);
 
 		// keywords 는 배열, style 은 문자열이어야 함.
 		if (
@@ -333,7 +340,7 @@ export const handlers = [
 	http.get('/api/integrations', () => HttpResponse.json({ integrations: state.integrations })),
 
 	http.post('/api/integrations', async ({ request }) => {
-		const { platform, value } = await request.json();
+		const { platform, value } = await body(request);
 
 		if (state.integrations.some((item) => item.value === value)) {
 			return fail(409, 'INTEGRATION_ALREADY_EXISTS', '이미 등록된 플랫폼입니다.');
@@ -433,7 +440,7 @@ export const handlers = [
 	}),
 
 	http.post('/api/projects', async ({ request }) => {
-		const payload = await request.json();
+		const payload = await body(request);
 
 		if (!payload?.name?.trim()) {
 			return fail(400, 'VALIDATION_ERROR', '프로젝트명은 필수 입력값입니다.');
@@ -463,7 +470,7 @@ export const handlers = [
 			return fail(404, 'PROJECT_NOT_FOUND', '해당 프로젝트를 찾을 수 없습니다.');
 		}
 
-		Object.assign(project, await request.json());
+		Object.assign(project, await body(request));
 		return HttpResponse.json({ message: '프로젝트가 수정되었습니다.', ...project });
 	}),
 
@@ -516,7 +523,7 @@ export const handlers = [
 
 	// 재정렬은 목록 순서를 skillIds 순으로 바꾼다. 명세서상 응답 본문은 없다.
 	http.put('/api/tech-stacks/reorder', async ({ request }) => {
-		const { skillIds } = await request.json();
+		const { skillIds } = await body(request);
 
 		if (!Array.isArray(skillIds)) {
 			return fail(400, 'INVALID_INPUT', '잘못된 입력값입니다.');
@@ -547,7 +554,7 @@ export const handlers = [
 	}),
 
 	http.post('/api/job-postings/url', async ({ request }) => {
-		const { url } = await request.json();
+		const { url } = await body(request);
 
 		if (!url?.trim()) {
 			return fail(400, 'INVALID_INPUT', '채용공고 URL은 필수 입력값입니다.');
@@ -606,7 +613,7 @@ export const handlers = [
 	}),
 
 	http.post('/api/generations', async ({ request }) => {
-		const payload = await request.json();
+		const payload = await body(request);
 
 		const generation = {
 			generationId: nextGenerationId++,
@@ -668,7 +675,7 @@ export const handlers = [
 			return fail(404, 'GENERATION_RESULT_NOT_FOUND', '해당 결과물을 찾을 수 없습니다.');
 		}
 
-		const { content } = await request.json();
+		const { content } = await body(request);
 		result.content = content ?? '';
 		result.edited = true;
 
