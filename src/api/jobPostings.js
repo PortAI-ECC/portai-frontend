@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, currentUserId } from './client';
 import { listOf } from './normalize';
 
 // 응답은 { success, data, error } 봉투로 오는데 client 인터셉터가 벗겨 주므로
@@ -14,9 +14,13 @@ export const deleteJobPosting = (jobPostingId) =>
 export const analyzeByUrl = (url) =>
 	apiClient.post('/job-postings/url', { url }).then((r) => r.data);
 
-// 경로가 /file 이 아니라 /pdf 다.
+// 경로가 /file 이 아니라 /pdf 다. userId 는 쿼리가 아니라 폼 필드로 받는다.
 export const analyzeByFile = (file) => {
 	const formData = new FormData();
 	formData.append('file', file);
+
+	const userId = currentUserId();
+	if (userId !== undefined && userId !== null) formData.append('userId', userId);
+
 	return apiClient.post('/job-postings/pdf', formData).then((r) => r.data);
 };

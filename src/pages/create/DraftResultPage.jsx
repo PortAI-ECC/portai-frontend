@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import CreateStepLayout from '../../components/layout/CreateStepLayout';
@@ -12,8 +12,12 @@ import Field from '../../components/common/Field';
 import Textarea from '../../components/common/Textarea';
 import Input from '../../components/common/Input';
 import { FullscreenIcon, HashIcon, SwapCardsIcon } from '../../components/common/icons';
-import ResultPreview from '../../components/result/ResultPreview';
+import PortfolioPreview from '../../components/result/PortfolioPreview';
+import { PORTFOLIO_TEMPLATE_LIST, normalizeTemplateId } from '../../components/result/templates';
+import { TEMPLATE_SWATCH } from '../../components/result/templates/swatches';
+import { usePortfolioTemplateData } from '../../hooks/usePortfolioTemplateData';
 import { RESULT_SECTIONS } from '../../constants/resultTypes';
+import { RECORD_CATEGORIES } from '../../constants/recordCategories';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
@@ -26,15 +30,36 @@ import {
 } from '../../api/generations';
 import { messageOf } from '../../api/client';
 
+// 템플릿이 6종이라 한 화면에 3개씩 나눠 보여주고 화살표로 넘긴다.
+const TEMPLATES_PER_PAGE = 3;
+const TEMPLATE_PAGE_COUNT = Math.ceil(PORTFOLIO_TEMPLATE_LIST.length / TEMPLATES_PER_PAGE);
+
+const TEMPLATE_PAGES = Array.from({ length: TEMPLATE_PAGE_COUNT }, (_, page) =>
+	PORTFOLIO_TEMPLATE_LIST.slice(page * TEMPLATES_PER_PAGE, (page + 1) * TEMPLATES_PER_PAGE),
+);
+
+// 모달을 열 때 지금 골라 둔 템플릿이 있는 페이지부터 보여준다.
+const pageOfTemplate = (id) => {
+	const index = PORTFOLIO_TEMPLATE_LIST.findIndex(
+		(template) => template.id === normalizeTemplateId(id),
+	);
+	return index < 0 ? 0 : Math.floor(index / TEMPLATES_PER_PAGE);
+};
+
 // align-items 를 stretch 로 둬 두 패널의 세로 길이를 맞춘다.
+//
+// minmax(0, 1fr) 이어야 한다. 1fr 의 최솟값은 auto 라서, 미리보기 패널 안의
+// 축소 전 템플릿(고정 1100px)이 그대로 최소 너비로 잡히면 오른쪽 칸이 부풀어
+// 왼쪽 편집칸을 100px 대로 짜부라뜨린다(축소 배율도 그 너비를 보고 정해지므로
+// 한번 밀리면 되돌아오지 않는다).
 const Columns = styled.div`
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	gap: 32px;
 	align-items: stretch;
 
 	@media (max-width: 1100px) {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 `;
 
@@ -72,17 +97,138 @@ const PanelTitle = styled.h2`
 	font-weight: 700;
 `;
 
+// 편집칸 4개에 자유텍스트 분류별 초안까지 이어지므로 목록 자체에 스크롤을 준다
+// (FreeTextPage 의 Accordion 과 같은 방식). 스크롤은 맨 위 '자기소개'부터 맨 끝까지
+// 하나로 걸리고, 높이를 오른쪽 미리보기 패널과 맞춰 두 패널의 절반 분할을 유지한다.
 const Fields = styled.div`
 	display: flex;
 	flex-direction: column;
 	gap: 24px;
+	max-height: 680px;
+	overflow-y: auto;
+	padding-right: 8px;
+
+	&::-webkit-scrollbar {
+		width: 8px;
+	}
+	&::-webkit-scrollbar-thumb {
+		background: ${({ theme }) => theme.colors.border};
+		border-radius: 999px;
+	}
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+`;
+
+const PendingDraftList = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+`;
+
+const PendingDraftHead = styled.div`
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+`;
+
+const PendingDraftLabel = styled.span`
+	font-size: 14px;
+	font-weight: 700;
+`;
+
+const PendingDraftBadge = styled.span`
+	flex: none;
+	font-size: 11px;
+	font-weight: 700;
+	padding: 3px 10px;
+	border-radius: ${({ theme }) => theme.radii.pill};
+	background: ${({ theme }) => theme.colors.surface};
+	color: ${({ theme }) => theme.colors.textMuted};
+	border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const PendingDraftBox = styled.div`
+	padding: 14px 16px;
+	border-radius: ${({ theme }) => theme.radii.md};
+	border: 1px dashed ${({ theme }) => theme.colors.border};
+	background: ${({ theme }) => theme.colors.surface};
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+`;
+
+const PendingDraftHint = styled.p`
+	font-size: 12px;
+	color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const PendingDraftQuote = styled.p`
+	font-size: 13px;
+	line-height: 1.6;
+	color: ${({ theme }) => theme.colors.textSub};
+	white-space: pre-wrap;
 `;
 
 const Preview = styled.div`
-	min-height: 680px;
+	border-radius: ${({ theme }) => theme.radii.lg};
+	overflow: hidden;
 `;
 
-const TemplateGrid = styled.div`
+// 템플릿이 6종으로 늘었어도 모달 디자인은 그대로 두고, 화살표로 3개씩 넘긴다.
+const TemplatePager = styled.div`
+	display: flex;
+	align-items: center;
+	gap: 16px;
+`;
+
+const PagerButton = styled.button`
+	flex: none;
+	width: 36px;
+	height: 36px;
+	display: grid;
+	place-items: center;
+	border-radius: 50%;
+	font-size: 15px;
+	line-height: 1;
+	color: ${({ theme }) => theme.colors.textSub};
+	background: ${({ theme }) => theme.colors.surface};
+	border: 1px solid ${({ theme }) => theme.colors.border};
+	transition: all 0.15s;
+
+	&:hover:not(:disabled) {
+		color: ${({ theme }) => theme.colors.primary};
+		border-color: ${({ theme }) => theme.colors.primary};
+	}
+
+	&:disabled {
+		opacity: 0.35;
+		cursor: default;
+	}
+`;
+
+// 화살표를 누르면 페이지가 옆으로 밀려 들어온다. 6개를 모두 한 줄에 두고
+// 트랙을 통째로 옮기는 방식이라, 넘어가는 도중에도 양쪽 페이지가 같이 보인다.
+const TemplateViewport = styled.div`
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+`;
+
+const TemplateTrack = styled.div`
+	display: flex;
+	transform: translateX(${({ $page }) => `-${$page * 100}%`});
+	transition: transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1);
+
+	/* 모션을 꺼 둔 사용자에게는 즉시 전환한다. */
+	@media (prefers-reduced-motion: reduce) {
+		transition: none;
+	}
+`;
+
+const TemplatePage = styled.div`
+	flex: 0 0 100%;
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: 24px;
@@ -95,12 +241,48 @@ const TemplateCard = styled.button`
 	text-align: left;
 `;
 
+// 선택 표시는 템플릿이 자리표시자였을 때 썸네일에 깔려 있던 파스텔 메시
+// 그라데이션을 되살린 것. 테두리 자리(border-box)에만 그라데이션을 깔고 안쪽
+// (padding-box)은 템플릿 고유 색으로 덮어 그라데이션 테두리를 만든다.
+const SELECTED_GRADIENT = ({ theme }) => `linear-gradient(135deg,
+	${theme.colors.primary} 0%,
+	#C86DD7 38%,
+	${theme.colors.pink} 68%,
+	${theme.colors.periwinkle} 100%)`;
+
+// 실제 템플릿을 축소 렌더하는 대신 대표 색만 막대로 보여준다(원래 모달 모습).
 const TemplateThumb = styled.div`
 	aspect-ratio: 3 / 4;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 14px;
 	border-radius: ${({ theme }) => theme.radii.md};
-	background: ${({ theme }) => theme.gradients.page};
-	border: 2px solid
-		${({ theme, $selected }) => ($selected ? theme.colors.primary : theme.colors.border)};
+	border: 3px solid transparent;
+	background:
+		linear-gradient(${({ $swatch }) => `${$swatch.bg}, ${$swatch.bg}`}) padding-box,
+		${(props) =>
+			props.$selected
+				? SELECTED_GRADIENT(props)
+				: `linear-gradient(${props.theme.colors.border}, ${props.theme.colors.border})`}
+			border-box;
+	box-shadow: ${({ $selected }) =>
+		$selected
+			? '0 0 0 4px rgba(123, 63, 242, 0.14), 0 10px 28px rgba(123, 63, 242, 0.24)'
+			: 'none'};
+	transition:
+		box-shadow 0.2s,
+		transform 0.2s;
+
+	${TemplateCard}:hover & {
+		transform: translateY(-2px);
+	}
+`;
+
+const ThumbBar = styled.div`
+	height: ${({ $height }) => $height};
+	border-radius: ${({ $swatch }) => $swatch.radius};
+	background: ${({ $swatch, $accent }) => ($accent ? $swatch.accent : $swatch.accentSoft)};
 `;
 
 const TemplateName = styled.span`
@@ -203,19 +385,13 @@ const draftsFrom = (generation) => {
 	return drafts;
 };
 
-const TEMPLATES = [
-	{ id: 'template-1', name: '템플릿 1' },
-	{ id: 'template-2', name: '템플릿 2' },
-	{ id: 'template-3', name: '템플릿 3' },
-];
-
 // DB 명세서 preferences.style ENUM 순서 그대로.
 const STYLE_OPTIONS = [
 	{ value: 'CONCISE', label: '간결하게' },
 	{ value: 'JUNIOR_DEVELOPER', label: '주니어 개발자' },
 	{ value: 'DATA_ANALYST', label: '데이터 분석가' },
 	{ value: 'RESEARCHER', label: '연구자' },
-	{ value: 'STARTUP_STYLE', label: '스타트업' },
+	{ value: 'STARTUP', label: '스타트업' },
 	{ value: 'ENTERPRISE', label: '엔터프라이즈' },
 ];
 
@@ -241,6 +417,7 @@ function DraftResultPage() {
 	const generationId = useCreateFlowStore((state) => state.generationId);
 	const setGenerationId = useCreateFlowStore((state) => state.setGenerationId);
 	const entryMode = useCreateFlowStore((state) => state.entryMode);
+	const freeTexts = useCreateFlowStore((state) => state.freeTexts);
 
 	// 마이페이지에서 열면 /create/draft?id=123 으로 들어온다. 주소에 있는 쪽이
 	// 항상 옳으므로(새로고침해도 같은 결과물이 열려야 한다) 스토어를 여기에 맞춘다.
@@ -269,6 +446,7 @@ function DraftResultPage() {
 	// 최초 진입 때 체이닝으로 뜬 템플릿 모달은 템플릿을 골라야만 닫힌다(X 없음).
 	// 헤더의 '템플릿 변경' 아이콘으로 다시 연 경우에만 자유롭게 닫을 수 있다.
 	const [templateModalDismissible, setTemplateModalDismissible] = useState(false);
+	const [templatePage, setTemplatePage] = useState(() => pageOfTemplate(templateId));
 	const [fullscreenOpen, setFullscreenOpen] = useState(false);
 	const [keywordInput, setKeywordInput] = useState('');
 	const [preferencesLoading, setPreferencesLoading] = useState(isLoggedIn);
@@ -277,6 +455,19 @@ function DraftResultPage() {
 	// 요청이 빨리 끝나면 로딩 화면을 아예 띄우지 않는다. 화면/단계가 아니라
 	// 실제로 걸린 시간(400ms)으로만 판단하고, 한 번 뜨면 500ms는 유지해 깜빡임을 막는다.
 	const showProgressOverlay = useDelayedVisible(progress.running);
+
+	const { data: portfolioData, error: portfolioError } = usePortfolioTemplateData(generation);
+
+	// 자유텍스트 입력 단계에서 실제로 뭔가 쓴 분류만 보여준다. freeTexts 는 서버로
+	// 가지 않는 브라우저 로컬 값이라, 마이페이지에서 다른 결과물(?id=)을 열었을 때는
+	// 무관한 옛 세션의 텍스트가 섞여 보일 수 있어 그 경로에서는 아예 감춘다.
+	const pendingDraftCategories = useMemo(
+		() =>
+			entryMode === 'manage'
+				? []
+				: RECORD_CATEGORIES.filter(({ key }) => (freeTexts[key] ?? '').trim()),
+		[freeTexts, entryMode],
+	);
 
 	// 이미 만들어 둔 결과가 있으면(미리보기에서 되돌아왔거나 마이페이지에서 열었을 때)
 	// 편집칸을 서버 내용으로 채운다.
@@ -316,7 +507,9 @@ function DraftResultPage() {
 					});
 				}
 			})
-			.catch(() => setPreferencesError('맞춤화 설정을 불러오지 못했어요. 기본값으로 진행합니다.'))
+			.catch(() =>
+				setPreferencesError('맞춤화 설정을 불러오지 못했어요. 기본값으로 진행합니다.'),
+			)
 			.finally(() => setPreferencesLoading(false));
 	}, [isLoggedIn, setPreferences]);
 
@@ -409,7 +602,10 @@ function DraftResultPage() {
 
 		setPreferencesError('');
 		setPreferencesModalOpen(false);
-		if (templateId === null && entryMode !== 'manage') setTemplateModalOpen(true);
+		if (templateId === null && entryMode !== 'manage') {
+			setTemplatePage(pageOfTemplate(templateId));
+			setTemplateModalOpen(true);
+		}
 	};
 
 	// 최초 진입 흐름에서 템플릿까지 고르고 나면 곧바로 생성을 시작한다.
@@ -457,8 +653,10 @@ function DraftResultPage() {
 						)}
 					</PanelHead>
 
-					{(draftError || progress.error) && (
-						<ErrorText role="alert">{draftError || progress.error}</ErrorText>
+					{(draftError || progress.error || portfolioError) && (
+						<ErrorText role="alert">
+							{draftError || progress.error || portfolioError}
+						</ErrorText>
 					)}
 
 					<Fields>
@@ -473,6 +671,24 @@ function DraftResultPage() {
 								/>
 							</Field>
 						))}
+
+						{pendingDraftCategories.length > 0 && (
+							<PendingDraftList>
+								{pendingDraftCategories.map(({ key, label }) => (
+									<PendingDraftBox key={key}>
+										<PendingDraftHead>
+											<PendingDraftLabel>{label} 초안</PendingDraftLabel>
+											<PendingDraftBadge>생성 준비 중</PendingDraftBadge>
+										</PendingDraftHead>
+										<PendingDraftHint>
+											자유 텍스트로 입력한 분류입니다. 분류별 초안 생성은 아직
+											준비 중이에요 — 아래는 입력한 내용이에요.
+										</PendingDraftHint>
+										<PendingDraftQuote>{freeTexts[key]}</PendingDraftQuote>
+									</PendingDraftBox>
+								))}
+							</PendingDraftList>
+						)}
 					</Fields>
 				</Card>
 
@@ -492,6 +708,7 @@ function DraftResultPage() {
 								type="button"
 								onClick={() => {
 									setTemplateModalDismissible(true);
+									setTemplatePage(pageOfTemplate(templateId));
 									setTemplateModalOpen(true);
 								}}
 								aria-label="템플릿 변경"
@@ -510,18 +727,19 @@ function DraftResultPage() {
 						</IconRow>
 					</PanelHead>
 
-					{/* 전체화면·최종 결과물과 같은 컴포넌트. 좁은 칸이라 compact 로만 그린다. */}
+					{/* 전체화면·최종 결과물과 같은 컴포넌트. 좁은 칸이라 panel(축소 렌더)로 그린다. */}
 					<Preview>
-						<ResultPreview generation={generation} compact />
+						<PortfolioPreview
+							data={portfolioData}
+							templateId={templateId}
+							variant="panel"
+							showPhoto={false}
+						/>
 					</Preview>
 				</Card>
 			</Columns>
 
-			<Modal
-				open={preferencesModalOpen}
-				onClose={handleClosePreferences}
-				title="맞춤화 설정"
-			>
+			<Modal open={preferencesModalOpen} onClose={handleClosePreferences} title="맞춤화 설정">
 				{preferencesError && <ErrorText role="alert">{preferencesError}</ErrorText>}
 
 				<PreferenceSection>
@@ -585,7 +803,8 @@ function DraftResultPage() {
 								$active={preferences.style === option.value}
 								onClick={() =>
 									setPreferences({
-										style: preferences.style === option.value ? '' : option.value,
+										style:
+											preferences.style === option.value ? '' : option.value,
 									})
 								}
 								disabled={preferencesLoading}
@@ -611,21 +830,69 @@ function DraftResultPage() {
 				onClose={() => setTemplateModalOpen(false)}
 				title="템플릿을 선택하세요"
 				dismissible={templateModalDismissible}
+				width="1000px"
 			>
-				<TemplateGrid>
-					{TEMPLATES.map((template) => (
-						<TemplateCard
-							key={template.id}
-							type="button"
-							onClick={() => setTemplateId(template.id)}
-						>
-							<TemplateThumb $selected={templateId === template.id} />
-							<TemplateName $selected={templateId === template.id}>
-								{template.name}
-							</TemplateName>
-						</TemplateCard>
-					))}
-				</TemplateGrid>
+				<TemplatePager>
+					<PagerButton
+						type="button"
+						onClick={() => setTemplatePage((page) => page - 1)}
+						disabled={templatePage === 0}
+						aria-label="이전 템플릿 보기"
+					>
+						‹
+					</PagerButton>
+
+					<TemplateViewport>
+						<TemplateTrack $page={templatePage}>
+							{TEMPLATE_PAGES.map((templates, page) => (
+								// 화면 밖 페이지는 보이지 않으므로 탭 순서와 읽기에서도 빼 둔다.
+								// (모달이 포커스를 가두는 탓에, 빼 두지 않으면 안 보이는 카드로
+								//  포커스가 넘어가 사라진 것처럼 읽힌다)
+								<TemplatePage key={page} inert={page !== templatePage}>
+									{templates.map((template) => {
+										const selected =
+											normalizeTemplateId(templateId) === template.id;
+										const swatch = TEMPLATE_SWATCH[template.id];
+
+										return (
+											<TemplateCard
+												key={template.id}
+												type="button"
+												onClick={() => setTemplateId(template.id)}
+												aria-pressed={selected}
+											>
+												<TemplateThumb
+													$swatch={swatch}
+													$selected={selected}
+												>
+													<ThumbBar
+														$swatch={swatch}
+														$accent
+														$height="20%"
+													/>
+													<ThumbBar $swatch={swatch} $height="14%" />
+													<ThumbBar $swatch={swatch} $height="14%" />
+												</TemplateThumb>
+												<TemplateName $selected={selected}>
+													{template.name}
+												</TemplateName>
+											</TemplateCard>
+										);
+									})}
+								</TemplatePage>
+							))}
+						</TemplateTrack>
+					</TemplateViewport>
+
+					<PagerButton
+						type="button"
+						onClick={() => setTemplatePage((page) => page + 1)}
+						disabled={templatePage >= TEMPLATE_PAGE_COUNT - 1}
+						aria-label="다음 템플릿 보기"
+					>
+						›
+					</PagerButton>
+				</TemplatePager>
 				<ModalFooter>
 					<Button disabled={!templateId} onClick={handleCloseTemplate}>
 						선택 완료
@@ -641,7 +908,12 @@ function DraftResultPage() {
 				title="임시 결과 사이트 미리보기 (전체화면)"
 				width="94vw"
 			>
-				<ResultPreview generation={generation} />
+				<PortfolioPreview
+					data={portfolioData}
+					templateId={templateId}
+					variant="full"
+					showPhoto={false}
+				/>
 			</Modal>
 
 			<ProgressOverlay

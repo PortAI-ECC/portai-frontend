@@ -3,7 +3,7 @@ import { apiClient } from './client';
 /** @returns { userId, name, email, phone, introOneLiner, desiredJob, desiredCompany } */
 export const getProfile = () => apiClient.get('/profile').then((r) => r.data);
 
-/** 명세서상 수정 가능한 필드는 introOneLiner / desiredJob 뿐이다. */
+/** 수정 가능한 필드는 phone / introOneLiner / desiredJob / desiredCompany 넷이다. */
 export const updateProfile = (payload) => apiClient.patch('/profile', payload).then((r) => r.data);
 
 /** @returns { keywords: string[], emphasizedTypes: string[], style } */

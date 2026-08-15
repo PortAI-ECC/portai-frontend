@@ -93,17 +93,24 @@ const ErrorText = styled.p`
 `;
 
 // platform 은 서버가 enum 으로 받으므로 호스트명에서 유추한다.
+// 값은 실제 서버가 받는 6가지뿐이다 — TISTORY·ETC 를 보내면 500 이 떨어진다.
+// 블로그 호스트는 BLOG 로 묶고, 못 알아본 주소는 HOMEPAGE 로 보낸다.
 const PLATFORM_BY_HOST = [
 	[/(^|\.)github\.com$/, 'GITHUB'],
 	[/(^|\.)velog\.io$/, 'VELOG'],
 	[/(^|\.)notion\.(so|site|com)$/, 'NOTION'],
-	[/(^|\.)tistory\.com$/, 'TISTORY'],
+	[/(^|\.)linkedin\.com$/, 'LINKEDIN'],
+	[/(^|\.)(tistory\.com|brunch\.co\.kr|medium\.com|blog\.naver\.com)$/, 'BLOG'],
 ];
 
 const parseUrl = (value) => {
 	try {
 		const url = new URL(value);
-		const platform = PLATFORM_BY_HOST.find(([re]) => re.test(url.hostname))?.[1] ?? 'ETC';
+		// new URL 은 javascript: · ftp: 같은 것도 통과시킨다. 안내 문구대로
+		// 웹 주소만 받도록 여기서 한 번 더 거른다.
+		if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+
+		const platform = PLATFORM_BY_HOST.find(([re]) => re.test(url.hostname))?.[1] ?? 'HOMEPAGE';
 		return { hostname: url.hostname, platform };
 	} catch {
 		return null;
@@ -119,6 +126,11 @@ const STATUS_LABEL = {
 
 const isCollecting = (status) => status === 'PENDING' || status === 'IN_PROGRESS';
 
+// 수집 상태를 물어보는 주기와, 끝나지 않을 때 포기하는 시점.
+// 분석·생성 폴링(5분)과 같은 상한으로 맞춰 둔다.
+const SYNC_POLL_INTERVAL = 2000;
+const SYNC_POLL_TIMEOUT = 5 * 60 * 1000;
+
 function LinksPage() {
 	const navigate = useNavigate();
 	const isLoggedIn = useAuthStore(selectIsLoggedIn);
@@ -128,20 +140,25 @@ function LinksPage() {
 	const setLinks = useCreateFlowStore((state) => state.setLinks);
 	const entryMode = useCreateFlowStore((state) => state.entryMode);
 
-	// 재수집은 이미 만든 사이트를 계속 관리할 때만 쓸모가 있다. 새로 만드는
-	// 중이라면 방금 등록한 링크를 다시 긁을 이유가 없어 아예 감춘다.
-	const canResync = isLoggedIn && entryMode === 'manage';
+	// 이미 만든 사이트를 다시 연 것인지. 서버의 연동 목록은 계정에 하나뿐이라
+	// 결과물별로 나뉘지 않는다 — 새로 만드는 중에 부르면 예전 결과물에 등록해 둔
+	// 링크가 그대로 딸려 들어오므로, 이때만 서버 목록을 원본으로 삼는다.
+	const isManagingSaved = isLoggedIn && entryMode === 'manage';
+
+	// 재수집도 같은 조건이다. 새로 만드는 중이라면 방금 등록한 링크를 다시 긁을
+	// 이유가 없어 아예 감춘다.
+	const canResync = isManagingSaved;
 
 	const [url, setUrl] = useState('');
 	const [error, setError] = useState('');
 	const [submitting, setSubmitting] = useState(false);
-	// 로그인 상태면 곧바로 목록을 부르므로 처음부터 로딩으로 시작한다.
-	const [loading, setLoading] = useState(isLoggedIn);
+	// 서버 목록을 부르는 경우에만 처음부터 로딩으로 시작한다. 새로 만드는 중이라면
+	// 아래 effect 가 그냥 빠져나가므로, true 로 두면 스피너가 걷히지 않는다.
+	const [loading, setLoading] = useState(isManagingSaved);
 	const showLoading = useDelayedVisible(loading);
 
-	// 로그인 상태면 서버에 등록된 연동 목록이 원본이다.
 	useEffect(() => {
-		if (!isLoggedIn) return;
+		if (!isManagingSaved) return;
 
 		getIntegrations()
 			.then((items) => {
@@ -158,7 +175,7 @@ function LinksPage() {
 			})
 			.catch(() => setError('연동 목록을 불러오지 못했어요.'))
 			.finally(() => setLoading(false));
-	}, [isLoggedIn, setLinks]);
+	}, [isManagingSaved, setLinks]);
 
 	// 수집 중인 항목이 하나라도 있으면 끝날 때까지 상태를 물어본다.
 	// 의존성에 배열을 그대로 넣으면 매 렌더 새 배열이라 문자열 키로 바꿔 비교한다.
@@ -171,8 +188,13 @@ function LinksPage() {
 		if (!isLoggedIn || !collectingKey) return undefined;
 
 		const ids = collectingKey.split(',');
+		const startedAt = Date.now();
+		let timer = null;
+		let stopped = false;
 
-		const timer = setInterval(async () => {
+		// setInterval 로 두면 응답이 느릴 때 요청이 겹쳐 쌓인다.
+		// 한 번 끝나고 나서 다음을 예약한다.
+		const tick = async () => {
 			const settled = await Promise.all(
 				ids.map((id) =>
 					getSyncStatus(id)
@@ -180,6 +202,8 @@ function LinksPage() {
 						.catch(() => null),
 				),
 			);
+			if (stopped) return;
+
 			const nextStatus = Object.fromEntries(settled.filter(Boolean));
 
 			// 폴링 중에 목록이 바뀌었을 수 있어 최신 상태를 스토어에서 다시 읽는다.
@@ -190,9 +214,23 @@ function LinksPage() {
 						nextStatus[link.id] ? { ...link, status: nextStatus[link.id] } : link,
 					),
 			);
-		}, 2000);
 
-		return () => clearInterval(timer);
+			// 수집이 끝나지 않으면 화면을 열어 둔 내내 물어보게 된다.
+			// 일정 시간이 지나면 멈추고 사람이 다시 확인하게 안내한다.
+			if (Date.now() - startedAt > SYNC_POLL_TIMEOUT) {
+				setError('수집이 오래 걸리고 있어요. 잠시 후 새로고침해서 확인해 주세요.');
+				return;
+			}
+
+			timer = setTimeout(tick, SYNC_POLL_INTERVAL);
+		};
+
+		timer = setTimeout(tick, SYNC_POLL_INTERVAL);
+
+		return () => {
+			stopped = true;
+			clearTimeout(timer);
+		};
 	}, [isLoggedIn, collectingKey, setLinks]);
 
 	const handleAdd = async (event) => {

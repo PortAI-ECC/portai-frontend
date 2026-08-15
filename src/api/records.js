@@ -1,4 +1,4 @@
-import { API_ROOT, apiClient } from './client';
+import { API_ROOT, apiClient, currentUserId } from './client';
 import { listOf } from './normalize';
 
 // 공모전·인턴/경력·자격증·교육·활동이력은 모두 동일한 CRUD 형태라 하나로 묶는다.
@@ -23,18 +23,20 @@ export const certificatesApi = createRecordApi('certificates', 'certificates');
 export const educationApi = createRecordApi('education', 'education');
 
 // 활동이력만 /api 밖(서버 루트)에 있고, 목록도 /me 로 따로 논다. 수정은 PATCH 가 아니라 PUT.
+// 게다가 이것만 userId 를 쿼리로 직접 받는다 — 다른 엔드포인트는 토큰에서 꺼내지만
+// 활동이력은 빠뜨리면 500 이 떨어진다(2026-08-15 실측).
 // 다른 리소스와 통일해 달라고 백엔드에 요청해 둔 상태라, 통일되면 위 형태로 되돌린다.
-const atRoot = { baseURL: API_ROOT };
+const atRoot = () => ({ baseURL: API_ROOT, params: { userId: currentUserId() } });
 
 export const activitiesApi = {
 	listKey: 'activities',
-	list: () => apiClient.get('/activities/me', atRoot).then((r) => r.data),
+	list: () => apiClient.get('/activities/me', atRoot()).then((r) => r.data),
 	listItems: () =>
-		apiClient.get('/activities/me', atRoot).then((r) => listOf(r.data, 'activities')),
-	create: (payload) => apiClient.post('/activities', payload, atRoot).then((r) => r.data),
+		apiClient.get('/activities/me', atRoot()).then((r) => listOf(r.data, 'activities')),
+	create: (payload) => apiClient.post('/activities', payload, atRoot()).then((r) => r.data),
 	update: (id, payload) =>
-		apiClient.put(`/activities/${id}`, payload, atRoot).then((r) => r.data),
-	remove: (id) => apiClient.delete(`/activities/${id}`, atRoot).then((r) => r.data),
+		apiClient.put(`/activities/${id}`, payload, atRoot()).then((r) => r.data),
+	remove: (id) => apiClient.delete(`/activities/${id}`, atRoot()).then((r) => r.data),
 };
 
 export const techStacksApi = {

@@ -4,7 +4,8 @@ import styled from '@emotion/styled';
 import Button from '../../components/common/Button';
 import LoadingOverlay from '../../components/common/LoadingOverlay';
 import { useDelayedVisible } from '../../hooks/useDelayedVisible';
-import ResultPreview from '../../components/result/ResultPreview';
+import PortfolioPreview from '../../components/result/PortfolioPreview';
+import { usePortfolioTemplateData } from '../../hooks/usePortfolioTemplateData';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
@@ -28,14 +29,15 @@ const Title = styled.h1`
 `;
 
 // 와이어프레임대로 결과물 안쪽에 스크롤을 둔다. 페이지 자체는 스크롤되지 않는다.
+// 템플릿이 저마다 전면 배경을 그리므로, 그 배경이 흰 매트 없이 프레임 모서리까지
+// 차게 padding 을 두지 않는다(overflow-x 만 hidden 으로 둬 둥근 모서리는 유지).
 const Frame = styled.div`
 	flex: 1;
 	min-height: 0;
-	overflow-y: auto;
+	overflow: hidden auto;
 	background: ${({ theme }) => theme.colors.surfaceSolid};
 	border: 1px solid ${({ theme }) => theme.colors.border};
 	border-radius: ${({ theme }) => theme.radii.xl};
-	padding: 32px;
 
 	&::-webkit-scrollbar {
 		width: 10px;
@@ -58,6 +60,7 @@ const Actions = styled.div`
 `;
 
 const ErrorText = styled.p`
+	padding: 20px 24px 0;
 	font-size: 14px;
 	color: ${({ theme }) => theme.colors.danger};
 `;
@@ -66,12 +69,17 @@ function FinalPreviewPage() {
 	const navigate = useNavigate();
 	const isLoggedIn = useAuthStore(selectIsLoggedIn);
 	const generationId = useCreateFlowStore((state) => state.generationId);
+	const templateId = useCreateFlowStore((state) => state.templateId);
 
 	const [generation, setGeneration] = useState(null);
 	const [loading, setLoading] = useState(isLoggedIn && generationId !== null);
 	const [error, setError] = useState('');
+	const { data: portfolioData, loading: recordsLoading, error: portfolioError } =
+		usePortfolioTemplateData(generation);
 	// 금방 끝나면 로딩 모달을 아예 띄우지 않는다(걸린 시간으로만 판단).
-	const showLoading = useDelayedVisible(loading);
+	// 결과물 로딩과 레코드 로딩을 합쳐서, 레코드가 늦게 도착해 빈 포트폴리오가
+	// 잠깐 번쩍이는 걸 막는다.
+	const showLoading = useDelayedVisible(loading || recordsLoading);
 
 	useEffect(() => {
 		if (!isLoggedIn || generationId === null) return;
@@ -101,10 +109,19 @@ function FinalPreviewPage() {
 			<LoadingOverlay open={showLoading} message="결과물을 불러오는 중이에요" />
 
 			<Frame>
-				{error && <ErrorText role="alert">{error}</ErrorText>}
+				{(error || portfolioError) && (
+					<ErrorText role="alert">{error || portfolioError}</ErrorText>
+				)}
 
 				{/* 임시 결과의 전체화면 미리보기와 같은 컴포넌트를 써서 둘이 어긋나지 않게 한다. */}
-				{!loading && !error && <ResultPreview generation={generation} />}
+				{!loading && !recordsLoading && !error && (
+					<PortfolioPreview
+						data={portfolioData}
+						templateId={templateId}
+						variant="full"
+						showPhoto={false}
+					/>
+				)}
 			</Frame>
 
 			<Actions>
