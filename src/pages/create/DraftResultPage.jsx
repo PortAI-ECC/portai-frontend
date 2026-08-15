@@ -270,7 +270,9 @@ const TemplateThumb = styled.div`
 		$selected
 			? '0 0 0 4px rgba(123, 63, 242, 0.14), 0 10px 28px rgba(123, 63, 242, 0.24)'
 			: 'none'};
-	transition: box-shadow 0.2s, transform 0.2s;
+	transition:
+		box-shadow 0.2s,
+		transform 0.2s;
 
 	${TemplateCard}:hover & {
 		transform: translateY(-2px);
@@ -389,7 +391,7 @@ const STYLE_OPTIONS = [
 	{ value: 'JUNIOR_DEVELOPER', label: '주니어 개발자' },
 	{ value: 'DATA_ANALYST', label: '데이터 분석가' },
 	{ value: 'RESEARCHER', label: '연구자' },
-	{ value: 'STARTUP_STYLE', label: '스타트업' },
+	{ value: 'STARTUP', label: '스타트업' },
 	{ value: 'ENTERPRISE', label: '엔터프라이즈' },
 ];
 
@@ -505,7 +507,9 @@ function DraftResultPage() {
 					});
 				}
 			})
-			.catch(() => setPreferencesError('맞춤화 설정을 불러오지 못했어요. 기본값으로 진행합니다.'))
+			.catch(() =>
+				setPreferencesError('맞춤화 설정을 불러오지 못했어요. 기본값으로 진행합니다.'),
+			)
 			.finally(() => setPreferencesLoading(false));
 	}, [isLoggedIn, setPreferences]);
 
@@ -735,11 +739,7 @@ function DraftResultPage() {
 				</Card>
 			</Columns>
 
-			<Modal
-				open={preferencesModalOpen}
-				onClose={handleClosePreferences}
-				title="맞춤화 설정"
-			>
+			<Modal open={preferencesModalOpen} onClose={handleClosePreferences} title="맞춤화 설정">
 				{preferencesError && <ErrorText role="alert">{preferencesError}</ErrorText>}
 
 				<PreferenceSection>
@@ -803,7 +803,8 @@ function DraftResultPage() {
 								$active={preferences.style === option.value}
 								onClick={() =>
 									setPreferences({
-										style: preferences.style === option.value ? '' : option.value,
+										style:
+											preferences.style === option.value ? '' : option.value,
 									})
 								}
 								disabled={preferencesLoading}
@@ -849,7 +850,8 @@ function DraftResultPage() {
 								//  포커스가 넘어가 사라진 것처럼 읽힌다)
 								<TemplatePage key={page} inert={page !== templatePage}>
 									{templates.map((template) => {
-										const selected = normalizeTemplateId(templateId) === template.id;
+										const selected =
+											normalizeTemplateId(templateId) === template.id;
 										const swatch = TEMPLATE_SWATCH[template.id];
 
 										return (
@@ -859,8 +861,15 @@ function DraftResultPage() {
 												onClick={() => setTemplateId(template.id)}
 												aria-pressed={selected}
 											>
-												<TemplateThumb $swatch={swatch} $selected={selected}>
-													<ThumbBar $swatch={swatch} $accent $height="20%" />
+												<TemplateThumb
+													$swatch={swatch}
+													$selected={selected}
+												>
+													<ThumbBar
+														$swatch={swatch}
+														$accent
+														$height="20%"
+													/>
 													<ThumbBar $swatch={swatch} $height="14%" />
 													<ThumbBar $swatch={swatch} $height="14%" />
 												</TemplateThumb>

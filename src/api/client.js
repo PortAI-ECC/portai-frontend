@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
+import { endSession } from '../store/session';
 import { camelizeKeys, normalizeResponse } from './normalize';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
@@ -56,7 +57,7 @@ apiClient.interceptors.response.use(
 			useAuthStore.getState().setAccessToken(data.accessToken);
 			return apiClient(original);
 		} catch (refreshError) {
-			useAuthStore.getState().signOut();
+			endSession();
 			return Promise.reject(refreshError);
 		} finally {
 			refreshRequest = null;
