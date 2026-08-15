@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import CreateStepLayout from '../../components/layout/CreateStepLayout';
@@ -100,6 +100,31 @@ function JobPostingPage() {
 	// 알 수 없어 진행바 대신 공용 로딩 모달을 쓴다.
 	const showLoading = useDelayedVisible(analyzing);
 
+	// 탭과 그 아래 입력칸을 서로 가리키게 해서, 화면을 못 보는 사람에게도
+	// '이 탭이 저 입력칸을 연다'가 전달되게 한다.
+	const baseId = useId();
+	const panelId = `${baseId}-panel`;
+	const tabId = (key) => `${baseId}-tab-${key}`;
+	const tabRefs = useRef([]);
+
+	// 탭 묶음 안에서는 Tab 이 아니라 화살표로 움직이는 게 표준 동작이다.
+	const handleTabKeyDown = (event, index) => {
+		const moves = {
+			ArrowRight: index + 1,
+			ArrowLeft: index - 1,
+			Home: 0,
+			End: MODES.length - 1,
+		};
+		const next = moves[event.key];
+		if (next === undefined) return;
+
+		event.preventDefault();
+		// 양 끝에서는 반대편으로 돌아간다.
+		const target = (next + MODES.length) % MODES.length;
+		setJobPosting({ mode: MODES[target].key });
+		tabRefs.current[target]?.focus();
+	};
+
 	// 선택한 방식에 실제 입력이 있을 때만 '분석 후 다음'으로 바뀐다.
 	const hasInput = Boolean(
 		{
@@ -188,60 +213,75 @@ function JobPostingPage() {
 		>
 			<LoadingOverlay open={showLoading} message="채용 공고를 읽고 있어요" />
 
-			<Tabs role="tablist">
-				{MODES.map(({ key, label }) => (
-					<Tab
-						key={key}
-						type="button"
-						role="tab"
-						aria-selected={jobPosting.mode === key}
-						$active={jobPosting.mode === key}
-						onClick={() => setJobPosting({ mode: key })}
-					>
-						{label}
-					</Tab>
-				))}
+			<Tabs role="tablist" aria-label="채용 공고 입력 방식">
+				{MODES.map(({ key, label }, index) => {
+					const selected = jobPosting.mode === key;
+
+					return (
+						<Tab
+							key={key}
+							type="button"
+							role="tab"
+							id={tabId(key)}
+							aria-selected={selected}
+							aria-controls={panelId}
+							// 탭 묶음은 통째로 한 정거장이다. 안에서 고르는 건
+							// 화살표 키가 하고, Tab 은 다음 요소로 넘어간다.
+							tabIndex={selected ? 0 : -1}
+							ref={(node) => {
+								tabRefs.current[index] = node;
+							}}
+							$active={selected}
+							onClick={() => setJobPosting({ mode: key })}
+							onKeyDown={(event) => handleTabKeyDown(event, index)}
+						>
+							{label}
+						</Tab>
+					);
+				})}
 			</Tabs>
 
-			{jobPosting.mode === 'url' && (
-				<Input
-					type="url"
-					placeholder="https://... 채용 공고 링크를 붙여넣으세요"
-					value={jobPosting.url}
-					onChange={(event) => setJobPosting({ url: event.target.value })}
-					aria-label="채용 공고 링크"
-				/>
-			)}
-
-			{jobPosting.mode === 'text' && (
-				<TallTextarea
-					placeholder="채용 공고 내용을 붙여넣으세요..."
-					value={jobPosting.text}
-					onChange={(event) => setJobPosting({ text: event.target.value })}
-					aria-label="채용 공고 본문"
-				/>
-			)}
-
-			{jobPosting.mode === 'file' && (
-				<DropZone>
-					<span>
-						📎 {jobPosting.fileName || '이미지 또는 PDF 파일을 클릭해서 업로드'}
-					</span>
-					<HiddenInput
-						type="file"
-						accept="image/*,application/pdf"
-						onChange={(event) => {
-							const picked = event.target.files?.[0] ?? null;
-							setFile(picked);
-							setJobPosting({ fileName: picked?.name ?? '' });
-							// 파일을 새로 골랐으면 앞서 분석해 둔 결과는 더 이상
-							// 이 파일의 것이 아니다.
-							setJobPostingId(null);
-							setError('');
-						}}
+			<div id={panelId} role="tabpanel" aria-labelledby={tabId(jobPosting.mode)}>
+				{jobPosting.mode === 'url' && (
+					<Input
+						type="url"
+						placeholder="https://... 채용 공고 링크를 붙여넣으세요"
+						value={jobPosting.url}
+						onChange={(event) => setJobPosting({ url: event.target.value })}
+						aria-label="채용 공고 링크"
 					/>
-				</DropZone>
-			)}
+				)}
+
+				{jobPosting.mode === 'text' && (
+					<TallTextarea
+						placeholder="채용 공고 내용을 붙여넣으세요..."
+						value={jobPosting.text}
+						onChange={(event) => setJobPosting({ text: event.target.value })}
+						aria-label="채용 공고 본문"
+					/>
+				)}
+
+				{jobPosting.mode === 'file' && (
+					<DropZone>
+						<span>
+							📎 {jobPosting.fileName || '이미지 또는 PDF 파일을 클릭해서 업로드'}
+						</span>
+						<HiddenInput
+							type="file"
+							accept="image/*,application/pdf"
+							onChange={(event) => {
+								const picked = event.target.files?.[0] ?? null;
+								setFile(picked);
+								setJobPosting({ fileName: picked?.name ?? '' });
+								// 파일을 새로 골랐으면 앞서 분석해 둔 결과는 더 이상
+								// 이 파일의 것이 아니다.
+								setJobPostingId(null);
+								setError('');
+							}}
+						/>
+					</DropZone>
+				)}
+			</div>
 
 			{error && <ErrorText role="alert">{error}</ErrorText>}
 

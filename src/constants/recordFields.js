@@ -39,6 +39,15 @@ const TEAM_TYPE_OPTIONS = [
 	{ value: 'TEAM', label: '팀' },
 ];
 
+const labelMapOf = (options) =>
+	Object.fromEntries(options.map(({ value, label }) => [value, label]));
+
+/** ENUM 값 → 한글 라벨. 옵션 배열과 다른 곳에서 문구가 갈라지지 않도록 여기서 파생한다. */
+export const DEGREE_LABEL = labelMapOf(DEGREE_OPTIONS);
+export const EDUCATION_STATUS_LABEL = labelMapOf(EDUCATION_STATUS_OPTIONS);
+export const TECH_CATEGORY_LABEL = labelMapOf(TECH_CATEGORY_OPTIONS);
+export const TEAM_TYPE_LABEL = labelMapOf(TEAM_TYPE_OPTIONS);
+
 export const RECORD_FIELDS = {
 	projects: [
 		{ name: 'name', label: '프로젝트명', required: true },
