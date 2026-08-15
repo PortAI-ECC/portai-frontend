@@ -4,6 +4,7 @@ import Button from '../common/Button';
 import Logo from './Logo';
 import { CREATE_STEPS, ROUTES } from '../../constants/routes';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
+import { endSession } from '../../store/session';
 import { logOut } from '../../api/auth';
 
 // 표지처럼 배경 그라데이션이 그대로 비치도록 헤더는 바 없이 얹기만 한다.
@@ -67,7 +68,6 @@ function Header() {
 	const navigate = useNavigate();
 	const { pathname } = useLocation();
 	const isLoggedIn = useAuthStore(selectIsLoggedIn);
-	const signOut = useAuthStore((state) => state.signOut);
 
 	const handleSignOut = async () => {
 		const { refreshToken } = useAuthStore.getState();
@@ -79,7 +79,7 @@ function Header() {
 			// 무시
 		}
 
-		signOut();
+		endSession();
 		navigate(ROUTES.HOME);
 	};
 

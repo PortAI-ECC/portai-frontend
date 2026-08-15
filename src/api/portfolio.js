@@ -10,17 +10,22 @@ import { RECORD_CATEGORIES } from '../constants/recordCategories';
  * activitiesApi 는 /activities/me 를 /api 밖으로 쳐서 404 가능성이 가장 높다)
  * 나머지가 계속 뜨게 하려고 소스별로 개별 catch 를 둔다.
  *
+ * 연동 링크만 부를지 말지를 고를 수 있다. 서버의 연동 목록은 계정 전체에 하나뿐이라,
+ * 새로 만드는 중에 부르면 예전 결과물에 등록해 둔 링크가 그대로 딸려 들어온다.
+ * (부르는 쪽이 createFlowStore 의 entryMode 를 보고 정한다.)
+ *
+ * @param {{ includeIntegrations?: boolean }} [options]
  * @returns {Promise<{
  *   profile, projects, contests, careers, certificates, education, techStacks,
  *   activities, integrations, failed: string[]
  * }>}
  */
-export async function fetchPortfolioRecords() {
+export async function fetchPortfolioRecords({ includeIntegrations = true } = {}) {
 	const sources = [
 		['profile', () => getProfile()],
 		['projects', () => projectsApi.listItems()],
 		...RECORD_CATEGORIES.map(({ key }) => [key, () => RECORD_APIS[key].listItems()]),
-		['integrations', () => getIntegrations()],
+		...(includeIntegrations ? [['integrations', () => getIntegrations()]] : []),
 	];
 
 	const failed = [];

@@ -17,6 +17,12 @@ export function usePortfolioTemplateData(generation) {
 	const isLoggedIn = useAuthStore(selectIsLoggedIn);
 	const basicInfo = useCreateFlowStore((state) => state.basicInfo);
 	const emphasizedTypes = useCreateFlowStore((state) => state.preferences.emphasizedTypes);
+	const entryMode = useCreateFlowStore((state) => state.entryMode);
+
+	// 연동 링크는 계정에 하나뿐이라 결과물별로 나뉘지 않는다. 새로 만드는 중이라면
+	// 이번에 등록한 것이 아닌 예전 링크까지 미리보기에 뜨므로, 이미 만든 사이트를
+	// 다시 열었을 때(manage)만 함께 불러온다.
+	const includeIntegrations = entryMode === 'manage';
 
 	const [records, setRecords] = useState(null);
 	const [loading, setLoading] = useState(isLoggedIn);
@@ -28,7 +34,7 @@ export function usePortfolioTemplateData(generation) {
 
 		let cancelled = false;
 
-		fetchPortfolioRecords()
+		fetchPortfolioRecords({ includeIntegrations })
 			.then((result) => {
 				if (cancelled) return;
 				setRecords(result);
@@ -44,7 +50,7 @@ export function usePortfolioTemplateData(generation) {
 		return () => {
 			cancelled = true;
 		};
-	}, [isLoggedIn]);
+	}, [isLoggedIn, includeIntegrations]);
 
 	const intro = useMemo(
 		() =>
