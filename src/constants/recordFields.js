@@ -50,7 +50,8 @@ export const TEAM_TYPE_LABEL = labelMapOf(TEAM_TYPE_OPTIONS);
 
 export const RECORD_FIELDS = {
 	projects: [
-		{ name: 'name', label: '프로젝트명', required: true },
+		// 서버 ProjectRequest 의 필수 키는 name 이 아니라 title 이다.
+		{ name: 'title', label: '프로젝트명', required: true },
 		{ name: 'startDate', label: '시작일', type: 'date' },
 		{ name: 'endDate', label: '종료일', type: 'date' },
 		{ name: 'teamType', label: '팀/개인', type: 'select', options: TEAM_TYPE_OPTIONS },
@@ -108,21 +109,24 @@ export const RECORD_FIELDS = {
 	],
 };
 
-/** 리소스마다 식별자 필드명이 다르다(명세서 응답 기준). */
+/**
+ * 리소스마다 식별자 필드명이 다르다. 명세서가 아니라 실제 응답(2026-08-15 실측) 기준 —
+ * 명세서와 달리 절반은 그냥 id 로 온다. 통일해 달라고 백엔드에 요청해 둔 상태다.
+ */
 export const RECORD_ID_FIELD = {
-	projects: 'projectId',
+	projects: 'id',
 	contests: 'contestId',
 	careers: 'careerId',
-	certificates: 'certificateId',
-	education: 'educationId',
+	certificates: 'id',
+	education: 'id',
 	techStacks: 'skillId',
-	activities: 'activityId',
+	activities: 'id',
 };
 
 /** 목록 한 줄에 크게 보여줄 대표 필드와 그 아래 보조 설명. */
 export const RECORD_SUMMARY = {
 	projects: {
-		title: 'name',
+		title: 'title',
 		subtitle: (item) => [item.role, item.startDate].filter(Boolean).join(' · '),
 	},
 	contests: { title: 'name', subtitle: (item) => [item.host, item.result].filter(Boolean).join(' · ') },

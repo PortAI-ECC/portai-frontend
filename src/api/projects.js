@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, currentUserId } from './client';
 import { listOf } from './normalize';
 
 export const getProjects = (params) => apiClient.get('/projects', { params }).then((r) => r.data);
@@ -11,9 +11,14 @@ export const updateProject = (projectId, payload) =>
 export const deleteProject = (projectId) =>
 	apiClient.delete(`/projects/${projectId}`).then((r) => r.data);
 
+// userId 는 쿼리가 아니라 폼 필드로 받는다(채용공고 PDF 업로드와 같음).
 export const uploadAttachment = (projectId, file) => {
 	const formData = new FormData();
 	formData.append('file', file);
+
+	const userId = currentUserId();
+	if (userId !== undefined && userId !== null) formData.append('userId', userId);
+
 	return apiClient.post(`/projects/${projectId}/attachments`, formData).then((r) => r.data);
 };
 

@@ -85,11 +85,12 @@ function SignUpPage() {
 
 	const phoneRef = useRef(null);
 
-	// 연락처는 비어 있을 때와 형식이 틀렸을 때 모두 같은 말풍선을 띄운다.
-	// 그냥 두면 빈 값에는 브라우저 기본 문구('이 입력란을 작성하세요.')가 따로
-	// 떠서 안내가 두 갈래로 갈린다. 값이 바뀔 때마다 우리 문구로 덮어 하나로 만든다.
+	// 서버 스펙(SignupRequest)상 연락처는 선택값이라 비워 둔 채 제출할 수 있어야 한다.
+	// 다만 값을 입력했다면 형식은 맞아야 하므로, 채워졌을 때만 검사한다.
 	useEffect(() => {
-		phoneRef.current?.setCustomValidity(isValidPhone(form.phone) ? '' : PHONE_MESSAGE);
+		phoneRef.current?.setCustomValidity(
+			!form.phone || isValidPhone(form.phone) ? '' : PHONE_MESSAGE,
+		);
 	}, [form.phone]);
 
 	const handleChange = (event) => {
@@ -177,7 +178,6 @@ function SignUpPage() {
 						label="연락처"
 						htmlFor="phone"
 						message="하이픈 없이 입력해도 자동으로 맞춰 드려요."
-						required
 					>
 						<Input
 							ref={phoneRef}

@@ -26,7 +26,9 @@ const INTEGRATION_LABEL = {
 	GITHUB: 'GitHub',
 	VELOG: 'Velog',
 	NOTION: 'Notion',
-	TISTORY: 'Tistory',
+	LINKEDIN: 'LinkedIn',
+	BLOG: '블로그',
+	HOMEPAGE: '홈페이지',
 };
 
 const SKILL_GROUP_LABEL = {
@@ -94,8 +96,8 @@ function buildLinks(integrations) {
 // RECORD_FIELDS.projects 에는 기술스택 필드가 없다 — 추측으로 채우지 않고 빈 값으로 둔다.
 function buildProjects(projects) {
 	return (projects ?? []).map((item, index) => ({
-		id: item.projectId ?? item.id ?? index,
-		title: item.name ?? '',
+		id: item.id ?? item.projectId ?? index,
+		title: item.title ?? item.name ?? '',
 		role: [TEAM_TYPE_ROLE_LABEL[item.teamType], item.role].filter(Boolean).join(' · '),
 		period: formatPeriod(item.startDate, item.endDate),
 		desc: item.description || item.proudestAchievement || item.myContribution || '',

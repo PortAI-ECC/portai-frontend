@@ -93,11 +93,14 @@ const ErrorText = styled.p`
 `;
 
 // platform 은 서버가 enum 으로 받으므로 호스트명에서 유추한다.
+// 값은 실제 서버가 받는 6가지뿐이다 — TISTORY·ETC 를 보내면 500 이 떨어진다.
+// 블로그 호스트는 BLOG 로 묶고, 못 알아본 주소는 HOMEPAGE 로 보낸다.
 const PLATFORM_BY_HOST = [
 	[/(^|\.)github\.com$/, 'GITHUB'],
 	[/(^|\.)velog\.io$/, 'VELOG'],
 	[/(^|\.)notion\.(so|site|com)$/, 'NOTION'],
-	[/(^|\.)tistory\.com$/, 'TISTORY'],
+	[/(^|\.)linkedin\.com$/, 'LINKEDIN'],
+	[/(^|\.)(tistory\.com|brunch\.co\.kr|medium\.com|blog\.naver\.com)$/, 'BLOG'],
 ];
 
 const parseUrl = (value) => {
@@ -107,7 +110,7 @@ const parseUrl = (value) => {
 		// 웹 주소만 받도록 여기서 한 번 더 거른다.
 		if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
 
-		const platform = PLATFORM_BY_HOST.find(([re]) => re.test(url.hostname))?.[1] ?? 'ETC';
+		const platform = PLATFORM_BY_HOST.find(([re]) => re.test(url.hostname))?.[1] ?? 'HOMEPAGE';
 		return { hostname: url.hostname, platform };
 	} catch {
 		return null;

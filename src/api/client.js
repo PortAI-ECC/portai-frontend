@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { endSession } from '../store/session';
-import { camelizeKeys, normalizeResponse } from './normalize';
+import { camelizeKeys, normalizeResponse, snakeizeKeys } from './normalize';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
@@ -22,8 +22,22 @@ apiClient.interceptors.request.use((config) => {
 	if (accessToken) {
 		config.headers.Authorization = `Bearer ${accessToken}`;
 	}
+
+	// 본문 키를 snake_case 로 바꾼다. 응답 인터셉터의 camelizeKeys 와 짝이라,
+	// 화면과 api 모듈은 양쪽 모두 camelCase 만 쓰면 된다.
+	// 쿼리 파라미터(config.params)는 서버가 camelCase 로 받으므로 손대지 않는다.
+	if (config.data && !(config.data instanceof FormData)) {
+		config.data = snakeizeKeys(config.data);
+	}
+
 	return config;
 });
+
+/**
+ * 대부분의 엔드포인트는 토큰에서 사용자를 꺼내지만, 활동이력과 파일 업로드
+ * 두 군데만 userId 를 직접 받는다. 그 두 곳에서만 쓴다.
+ */
+export const currentUserId = () => useAuthStore.getState().user?.userId;
 
 // 동시에 여러 요청이 401 을 받아도 refresh 는 한 번만 호출되도록 공유한다.
 let refreshRequest = null;

@@ -95,17 +95,25 @@ const CardTitle = styled.h2`
 
 // 비로그인일 땐 '비로그인으로 진행', 로그인일 땐 '마이페이지' 링크로 재사용한다.
 const FooterLink = styled.button`
-	font-size: 14px;
+	font-size: 15px;
 	color: ${({ theme }) => theme.colors.textSub};
 	&:hover {
 		color: ${({ theme }) => theme.colors.primary};
 	}
 `;
 
-// 회원가입 안내와 붙어 보여서 따로 떼어 둔다. 로그인/회원가입과는 결이 다른
-// '인증을 건너뛴다'는 선택이라, 사이를 벌려 다른 갈래로 읽히게 한다.
+// 회원가입 안내와 한 카드 안에 있으면 뒤섞여 보여서 카드 밖으로 빼서 별도 동작임을 분리함.
 const GuestLink = styled(FooterLink)`
-	margin-top: 12px;
+	display: block;
+	width: 100%;
+	margin-top: 27px;
+	text-align: right;
+	transform: translateX(-13px);
+`;
+
+const CardColumn = styled.div`
+	display: flex;
+	flex-direction: column;
 `;
 
 const ErrorText = styled.p`
@@ -201,7 +209,7 @@ const PROFILE_FIELDS = [
 	{ key: 'introOneLiner', label: '한 줄 소개' },
 ];
 
-function LoginCard({ form, error, submitting, onChange, onSubmit, onGuest, onSignUp }) {
+function LoginCard({ form, error, submitting, onChange, onSubmit, onSignUp }) {
 	return (
 		<Form onSubmit={onSubmit}>
 			<CardTitle>로그인</CardTitle>
@@ -246,10 +254,6 @@ function LoginCard({ form, error, submitting, onChange, onSubmit, onGuest, onSig
 					회원가입
 				</SignUpLink>
 			</SignUpRow>
-
-			<GuestLink type="button" onClick={onGuest}>
-				비로그인으로 진행 →
-			</GuestLink>
 		</Form>
 	);
 }
@@ -355,25 +359,32 @@ function HomePage() {
 				</Highlights>
 			</div>
 
-			<Card>
-				{isLoggedIn ? (
-					<ProfileCard
-						profile={profile}
-						loading={profileLoading}
-						onOpenMyPage={() => navigate(ROUTES.MYPAGE)}
-					/>
-				) : (
-					<LoginCard
-						form={form}
-						error={error}
-						submitting={submitting}
-						onChange={handleChange}
-						onSubmit={handleSubmit}
-						onGuest={() => navigate(ROUTES.CREATE_BASIC)}
-						onSignUp={() => navigate(ROUTES.SIGNUP)}
-					/>
+			<CardColumn>
+				<Card>
+					{isLoggedIn ? (
+						<ProfileCard
+							profile={profile}
+							loading={profileLoading}
+							onOpenMyPage={() => navigate(ROUTES.MYPAGE)}
+						/>
+					) : (
+						<LoginCard
+							form={form}
+							error={error}
+							submitting={submitting}
+							onChange={handleChange}
+							onSubmit={handleSubmit}
+							onSignUp={() => navigate(ROUTES.SIGNUP)}
+						/>
+					)}
+				</Card>
+
+				{!isLoggedIn && (
+					<GuestLink type="button" onClick={() => navigate(ROUTES.CREATE_BASIC)}>
+						비로그인으로 진행 →
+					</GuestLink>
 				)}
-			</Card>
+			</CardColumn>
 		</Layout>
 	);
 }
