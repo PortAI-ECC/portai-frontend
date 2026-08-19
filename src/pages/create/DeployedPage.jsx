@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Button from '../../components/common/Button';
 import { ROUTES } from '../../constants/routes';
@@ -7,6 +7,7 @@ import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { downloadFile } from '../../api/generations';
 import { messageOf } from '../../api/client';
+import { SHARE_URL_LIMIT } from '../../utils/shareLink';
 
 // 이력서 버튼이 화면 세로 2/3 쯤, 안내 문구가 최하단에 오도록
 // 화면 높이를 채운 뒤 남는 공간을 URL 아래에 몰아준다.
@@ -152,7 +153,15 @@ function DeployedPage() {
 		reset();
 	}, [reset]);
 
-	const portfolioUrl = `${window.location.origin}/u/username`;
+	// 공유 링크는 조회 API 없이 내용을 slug 안에 통째로 담는다(utils/shareLink).
+	// 앞 화면이 스토어가 비워지기 전에 만들어 넘겨준 것을 그대로 쓴다.
+	// slug 는 경로가 아니라 해시(#)로 붙인다 — PortfolioPage 상단 주석 참고.
+	const { state } = useLocation();
+	const shareSlug = state?.shareSlug ?? '';
+	const portfolioUrl = shareSlug
+		? `${window.location.origin}${ROUTES.PORTFOLIO}#${shareSlug}`
+		: '';
+	const urlTooLong = portfolioUrl.length > SHARE_URL_LIMIT;
 
 	// 클립보드는 https(또는 localhost)가 아니거나 권한이 막히면 그냥 실패한다.
 	// 조용히 넘어가면 사용자는 복사된 줄 알기 때문에 실패도 화면에 알린다.
@@ -199,13 +208,27 @@ function DeployedPage() {
 			<Title>배포 완료 🎉</Title>
 
 			<UrlSection>
-				<UrlRow>
-					<UrlBox>{portfolioUrl}</UrlBox>
-					<Button size="lg" onClick={handleCopy}>
-						{copied ? '복사됨!' : 'URL 복사하기'}
-					</Button>
-				</UrlRow>
-				{copyError && <CopyErrorText role="alert">{copyError}</CopyErrorText>}
+				{portfolioUrl ? (
+					<>
+						<UrlRow>
+							<UrlBox>{portfolioUrl}</UrlBox>
+							<Button size="lg" onClick={handleCopy} disabled={urlTooLong}>
+								{copied ? '복사됨!' : 'URL 복사하기'}
+							</Button>
+						</UrlRow>
+						{urlTooLong && (
+							<CopyErrorText role="alert">
+								내용이 많아 주소가 너무 길어졌어요. 항목을 줄이고 다시 만들면 공유할
+								수 있어요.
+							</CopyErrorText>
+						)}
+						{copyError && <CopyErrorText role="alert">{copyError}</CopyErrorText>}
+					</>
+				) : (
+					<Hint>
+						미리보기 화면에서 &lsquo;완료&rsquo;를 눌러야 공유 주소가 만들어져요.
+					</Hint>
+				)}
 			</UrlSection>
 
 			<Actions>
