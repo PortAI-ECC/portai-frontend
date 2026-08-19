@@ -10,6 +10,7 @@ import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
 import { getGeneration } from '../../api/generations';
+import { encodePortfolioSlug } from '../../utils/shareLink';
 
 // 실제 배포된 사이트에 들어간 것처럼 보이는 게 이 화면의 목적이라,
 // 폭 제한 없이 현재 화면 세로를 거의 꽉 채운다.
@@ -74,8 +75,11 @@ function FinalPreviewPage() {
 	const [generation, setGeneration] = useState(null);
 	const [loading, setLoading] = useState(isLoggedIn && generationId !== null);
 	const [error, setError] = useState('');
-	const { data: portfolioData, loading: recordsLoading, error: portfolioError } =
-		usePortfolioTemplateData(generation);
+	const {
+		data: portfolioData,
+		loading: recordsLoading,
+		error: portfolioError,
+	} = usePortfolioTemplateData(generation);
 	// 금방 끝나면 로딩 모달을 아예 띄우지 않는다(걸린 시간으로만 판단).
 	// 결과물 로딩과 레코드 로딩을 합쳐서, 레코드가 늦게 도착해 빈 포트폴리오가
 	// 잠깐 번쩍이는 걸 막는다.
@@ -101,6 +105,18 @@ function FinalPreviewPage() {
 			cancelled = true;
 		};
 	}, [isLoggedIn, generationId]);
+
+	// 배포 완료 화면은 들어가자마자 위자드를 비우므로, 거기서도 계속 필요한 결과물 id 는
+	// 주소에 실어 보낸다(새로고침에도 살아남게). 공유 링크의 slug 도 같은 이유로 여기서
+	// 미리 만들어 넘긴다 — 스토어가 비워진 뒤에는 담을 내용을 다시 모을 수 없다.
+	const handleDone = async () => {
+		const shareSlug = await encodePortfolioSlug({ data: portfolioData, templateId });
+
+		navigate(
+			generationId === null ? ROUTES.CREATE_DONE : `${ROUTES.CREATE_DONE}?id=${generationId}`,
+			{ state: { shareSlug } },
+		);
+	};
 
 	return (
 		<Wrapper>
@@ -128,18 +144,7 @@ function FinalPreviewPage() {
 				<Button variant="secondary" size="lg" onClick={() => navigate(ROUTES.CREATE_DRAFT)}>
 					이전으로
 				</Button>
-				{/* 배포 완료 화면은 들어가자마자 위자드를 비우므로, 거기서도 계속
-				    필요한 결과물 id 는 주소에 실어 보낸다(새로고침에도 살아남게). */}
-				<Button
-					size="lg"
-					onClick={() =>
-						navigate(
-							generationId === null
-								? ROUTES.CREATE_DONE
-								: `${ROUTES.CREATE_DONE}?id=${generationId}`,
-						)
-					}
-				>
+				<Button size="lg" onClick={handleDone}>
 					완료
 				</Button>
 			</Actions>
