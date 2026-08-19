@@ -10,10 +10,12 @@ const float = keyframes`
 `;
 
 // 새 질문을 물어올 때 세 번. 통통 튀지 않고 위에서 잠깐 머물렀다 천천히 내려온다.
+// 뛰는 폭은 우파 몸집(81px)에 맞춰 둔다. 말풍선과 겹치는 구간이 생기는데,
+// 그때 우파가 앞에 오도록 AiQuestionCharacter 의 CharacterSlot 이 z-index 를 올린다.
 const bounce = keyframes`
 	0% { transform: translateY(0); }
-	30% { transform: translateY(-16px); }
-	55% { transform: translateY(-16px); }
+	30% { transform: translateY(-15px); }
+	55% { transform: translateY(-15px); }
 	100% { transform: translateY(0); }
 `;
 

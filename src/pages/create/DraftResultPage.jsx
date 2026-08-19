@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import CreateStepLayout from '../../components/layout/CreateStepLayout';
@@ -17,7 +17,6 @@ import { PORTFOLIO_TEMPLATE_LIST, normalizeTemplateId } from '../../components/r
 import { TEMPLATE_SWATCH } from '../../components/result/templates/swatches';
 import { usePortfolioTemplateData } from '../../hooks/usePortfolioTemplateData';
 import { RESULT_SECTIONS } from '../../constants/resultTypes';
-import { RECORD_CATEGORIES } from '../../constants/recordCategories';
 import { ROUTES } from '../../constants/routes';
 import { useCreateFlowStore } from '../../store/createFlowStore';
 import { selectIsLoggedIn, useAuthStore } from '../../store/authStore';
@@ -118,57 +117,6 @@ const Fields = styled.div`
 	&::-webkit-scrollbar-track {
 		background: transparent;
 	}
-`;
-
-const PendingDraftList = styled.div`
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-`;
-
-const PendingDraftHead = styled.div`
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 12px;
-`;
-
-const PendingDraftLabel = styled.span`
-	font-size: 14px;
-	font-weight: 700;
-`;
-
-const PendingDraftBadge = styled.span`
-	flex: none;
-	font-size: 11px;
-	font-weight: 700;
-	padding: 3px 10px;
-	border-radius: ${({ theme }) => theme.radii.pill};
-	background: ${({ theme }) => theme.colors.surface};
-	color: ${({ theme }) => theme.colors.textMuted};
-	border: 1px solid ${({ theme }) => theme.colors.border};
-`;
-
-const PendingDraftBox = styled.div`
-	padding: 14px 16px;
-	border-radius: ${({ theme }) => theme.radii.md};
-	border: 1px dashed ${({ theme }) => theme.colors.border};
-	background: ${({ theme }) => theme.colors.surface};
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-`;
-
-const PendingDraftHint = styled.p`
-	font-size: 12px;
-	color: ${({ theme }) => theme.colors.textMuted};
-`;
-
-const PendingDraftQuote = styled.p`
-	font-size: 13px;
-	line-height: 1.6;
-	color: ${({ theme }) => theme.colors.textSub};
-	white-space: pre-wrap;
 `;
 
 const Preview = styled.div`
@@ -417,7 +365,6 @@ function DraftResultPage() {
 	const generationId = useCreateFlowStore((state) => state.generationId);
 	const setGenerationId = useCreateFlowStore((state) => state.setGenerationId);
 	const entryMode = useCreateFlowStore((state) => state.entryMode);
-	const freeTexts = useCreateFlowStore((state) => state.freeTexts);
 
 	// 마이페이지에서 열면 /create/draft?id=123 으로 들어온다. 주소에 있는 쪽이
 	// 항상 옳으므로(새로고침해도 같은 결과물이 열려야 한다) 스토어를 여기에 맞춘다.
@@ -457,17 +404,6 @@ function DraftResultPage() {
 	const showProgressOverlay = useDelayedVisible(progress.running);
 
 	const { data: portfolioData, error: portfolioError } = usePortfolioTemplateData(generation);
-
-	// 자유텍스트 입력 단계에서 실제로 뭔가 쓴 분류만 보여준다. freeTexts 는 서버로
-	// 가지 않는 브라우저 로컬 값이라, 마이페이지에서 다른 결과물(?id=)을 열었을 때는
-	// 무관한 옛 세션의 텍스트가 섞여 보일 수 있어 그 경로에서는 아예 감춘다.
-	const pendingDraftCategories = useMemo(
-		() =>
-			entryMode === 'manage'
-				? []
-				: RECORD_CATEGORIES.filter(({ key }) => (freeTexts[key] ?? '').trim()),
-		[freeTexts, entryMode],
-	);
 
 	// 이미 만들어 둔 결과가 있으면(미리보기에서 되돌아왔거나 마이페이지에서 열었을 때)
 	// 편집칸을 서버 내용으로 채운다.
@@ -671,24 +607,6 @@ function DraftResultPage() {
 								/>
 							</Field>
 						))}
-
-						{pendingDraftCategories.length > 0 && (
-							<PendingDraftList>
-								{pendingDraftCategories.map(({ key, label }) => (
-									<PendingDraftBox key={key}>
-										<PendingDraftHead>
-											<PendingDraftLabel>{label} 초안</PendingDraftLabel>
-											<PendingDraftBadge>생성 준비 중</PendingDraftBadge>
-										</PendingDraftHead>
-										<PendingDraftHint>
-											자유 텍스트로 입력한 분류입니다. 분류별 초안 생성은 아직
-											준비 중이에요 — 아래는 입력한 내용이에요.
-										</PendingDraftHint>
-										<PendingDraftQuote>{freeTexts[key]}</PendingDraftQuote>
-									</PendingDraftBox>
-								))}
-							</PendingDraftList>
-						)}
 					</Fields>
 				</Card>
 

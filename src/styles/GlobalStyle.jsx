@@ -20,6 +20,13 @@ function GlobalStyle() {
 					min-height: 100%;
 				}
 
+				/* 세로 스크롤바 자리를 늘 비워 둔다. 페이지 길이에 따라 스크롤바가
+				   생겼다 없어지면 화면 폭이 그만큼 달라져, 가운데 정렬한 것들이
+				   좌우로 흔들린다(활동이력 분야를 옮길 때 눈에 띄었다). */
+				html {
+					scrollbar-gutter: stable;
+				}
+
 				body {
 					font-family: ${theme.font.family};
 					color: ${theme.colors.text};
