@@ -10,7 +10,8 @@ export const ROUTES = {
 	CREATE_DRAFT: '/create/draft',
 	CREATE_PREVIEW: '/create/preview',
 	CREATE_DONE: '/create/done',
-	PORTFOLIO: '/u/:slug',
+	// slug 는 경로가 아니라 해시(#)로 실린다 — PortfolioPage 참고.
+	PORTFOLIO: '/u',
 };
 
 // 와이어프레임 상단 진행바. path 가 없는 단계는 결과 화면 묶음을 가리킨다.
