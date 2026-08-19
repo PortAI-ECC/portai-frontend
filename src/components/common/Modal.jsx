@@ -73,10 +73,21 @@ const focusableIn = (root) =>
  * 넘어갈 수 있는 최초 진입 모달(예: 템플릿 선택)에 쓴다 — 그 안의 확정 버튼만
  * 닫을 수 있다.
  *
+ * closeOnBackdrop=false 면 배경 클릭만 막고 X·Esc 는 그대로 둔다. 고르는 중에
+ * 실수로 바깥을 눌러 선택이 날아가면 안 되는 모달에 쓴다.
+ *
  * 열려 있는 동안 포커스는 패널 안에 가둔다. 그러지 않으면 탭이 뒤쪽 화면의
  * 입력칸으로 넘어가는데, 화면을 못 보는 사람에게는 모달이 닫힌 것처럼 읽힌다.
  */
-function Modal({ open, onClose, title, width = '720px', children, dismissible = true }) {
+function Modal({
+	open,
+	onClose,
+	title,
+	width = '720px',
+	children,
+	dismissible = true,
+	closeOnBackdrop = true,
+}) {
 	const titleId = useId();
 	const panelRef = useRef(null);
 	// 모달을 열기 직전에 포커스가 있던 자리. 닫고 나면 여기로 돌려준다.
@@ -147,7 +158,7 @@ function Modal({ open, onClose, title, width = '720px', children, dismissible = 
 	if (!open) return null;
 
 	return createPortal(
-		<Backdrop onClick={dismissible ? onClose : undefined}>
+		<Backdrop onClick={dismissible && closeOnBackdrop ? onClose : undefined}>
 			<Panel
 				ref={panelRef}
 				role="dialog"

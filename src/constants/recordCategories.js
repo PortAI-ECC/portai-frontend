@@ -6,5 +6,6 @@ export const RECORD_CATEGORIES = [
 	{ key: 'certificates', label: '자격증' },
 	{ key: 'education', label: '교육' },
 	{ key: 'techStacks', label: '기술스택' },
-	{ key: 'activities', label: '활동이력(기타)' },
+	// 화면 제목이 이미 '활동이력'이라 여기서는 '기타'로만 둔다.
+	{ key: 'activities', label: '기타' },
 ];

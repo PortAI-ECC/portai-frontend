@@ -66,7 +66,8 @@ export const RECORD_FIELDS = {
 		{ name: 'host', label: '주최 기관' },
 		{ name: 'startDate', label: '시작일', type: 'date' },
 		{ name: 'endDate', label: '종료일', type: 'date' },
-		{ name: 'role', label: '담당 역할' },
+		// 수상 여부가 '결과' 바로 오른쪽 칸에 오도록, 담당 역할은 한 줄을 다 쓴다.
+		{ name: 'role', label: '담당 역할', wide: true },
 		{ name: 'result', label: '결과', placeholder: '예: 대상 수상' },
 		{ name: 'awarded', label: '수상 여부', type: 'checkbox' },
 	],
@@ -79,7 +80,8 @@ export const RECORD_FIELDS = {
 		{ name: 'achievements', label: '성과', type: 'textarea' },
 	],
 	certificates: [
-		{ name: 'name', label: '자격증명', required: true },
+		// '자격증명'은 '자격 증명(credential)'으로 읽혀서 이름을 풀어 쓴다.
+		{ name: 'name', label: '자격증 이름', required: true },
 		{ name: 'issuer', label: '발급기관' },
 		{ name: 'acquiredDate', label: '취득일', type: 'date' },
 		{ name: 'expiryDate', label: '만료일', type: 'date' },
@@ -91,7 +93,8 @@ export const RECORD_FIELDS = {
 		{ name: 'major', label: '전공' },
 		{ name: 'doubleMajor', label: '복수/부전공' },
 		{ name: 'gpaScore', label: '취득 학점', type: 'number', step: '0.01' },
-		{ name: 'gpaScale', label: '만점 기준', type: 'number', step: '0.01' },
+		// 만점 기준은 4.5 / 4.3 처럼 소수 첫째 자리까지만 쓰므로 화살표도 0.1 씩 움직인다.
+		{ name: 'gpaScale', label: '만점 기준', type: 'number', step: '0.1' },
 		{ name: 'status', label: '재학 상태', type: 'select', options: EDUCATION_STATUS_OPTIONS },
 		{ name: 'expectedGraduation', label: '졸업(예정)일', type: 'date' },
 	],
@@ -101,11 +104,12 @@ export const RECORD_FIELDS = {
 		{ name: 'proficiency', label: '숙련도', type: 'select', options: PROFICIENCY_OPTIONS },
 	],
 	activities: [
+		// 두 칸씩 배치되므로 시작일·종료일이 같은 줄에 나란히 오도록 순서를 잡는다.
 		{ name: 'name', label: '활동명', required: true },
+		{ name: 'role', label: '담당 역할' },
 		{ name: 'startDate', label: '시작일', type: 'date' },
 		{ name: 'endDate', label: '종료일', type: 'date' },
-		{ name: 'role', label: '담당 역할' },
-		{ name: 'description', label: '한 일', type: 'textarea' },
+		{ name: 'description', label: '활동', type: 'textarea' },
 	],
 };
 

@@ -1,86 +1,92 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import CreateStepLayout from '../../components/layout/CreateStepLayout';
-import Textarea from '../../components/common/Textarea';
 import Button from '../../components/common/Button';
 import AiQuestionCharacter from '../../components/character/AiQuestionCharacter';
+import RecordManagerPanel from '../../components/record/RecordManagerPanel';
 import { RECORD_CATEGORIES } from '../../constants/recordCategories';
 import { ROUTES } from '../../constants/routes';
-import { useCreateFlowStore } from '../../store/createFlowStore';
 
+// 왼쪽 분류 목록 · 가운데 입력 패널 · 오른쪽 우파.
+// 가운데 패널이 예전 아코디언만큼 넓게 쓰도록 양옆 열은 좁게 잡는다.
+// 좌우 열 너비가 다르면 가운데 패널이 그 차이의 절반만큼 밀려서
+// 제목과 세로선이 어긋난다. 두 열을 같은 너비로 잡아 패널을 정중앙에 둔다.
 const Layout = styled.div`
-	max-width: 1180px;
-	margin: 0 auto;
+	display: grid;
+	grid-template-columns: 200px minmax(0, 1fr) 200px;
+	gap: 24px;
+	align-items: start;
+
+	@media (max-width: 1100px) {
+		grid-template-columns: 140px minmax(0, 1fr);
+	}
+
+	@media (max-width: 760px) {
+		grid-template-columns: minmax(0, 1fr);
+	}
 `;
 
-// 열린 항목의 입력창을 키우면 아래 분야들이 화면 밖으로 밀리므로,
-// 목록 자체에 스크롤을 줘서 '다음' 버튼이 항상 보이게 한다.
-const Accordion = styled.div`
+// 배경·테두리 없이 글자만 둔다. 카드가 겹쳐 보이면 번잡해서.
+// 열은 대칭을 위해 넓게 잡되, 글자 목록 자체는 예전 폭을 유지한다.
+const CategoryList = styled.nav`
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
-	max-height: 560px;
-	overflow-y: auto;
-	padding-right: 8px;
+	max-width: 160px;
+	position: sticky;
+	top: 24px;
+`;
 
-	/* 스크롤바가 파스텔 배경을 해치지 않도록 얇게 */
-	&::-webkit-scrollbar {
-		width: 8px;
-	}
-	&::-webkit-scrollbar-thumb {
-		background: ${({ theme }) => theme.colors.border};
-		border-radius: 999px;
-	}
-	&::-webkit-scrollbar-track {
-		background: transparent;
+const CategoryButton = styled.button`
+	width: 100%;
+	padding: 11px 14px;
+	text-align: left;
+	font-size: 14px;
+	font-weight: ${({ $active }) => ($active ? 700 : 500)};
+	border-radius: ${({ theme }) => theme.radii.md};
+	background: ${({ theme, $active }) => ($active ? theme.colors.primarySoft : 'transparent')};
+	color: ${({ theme, $active }) => ($active ? theme.colors.primary : theme.colors.textSub)};
+	transition:
+		background 0.15s,
+		color 0.15s;
+
+	&:hover {
+		color: ${({ theme }) => theme.colors.primary};
 	}
 `;
 
-const Section = styled.section`
-	/* 스크롤 컨테이너 안에서 항목이 찌그러지지 않도록 축소를 막는다. */
-	flex: none;
+const Panel = styled.section`
+	padding: 24px;
 	background: ${({ theme }) => theme.colors.surface};
 	border: 1px solid ${({ theme }) => theme.colors.border};
 	border-radius: ${({ theme }) => theme.radii.lg};
-	overflow: hidden;
 `;
 
-const Toggle = styled.button`
-	width: 100%;
-	height: 50px;
-	padding: 0 20px;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	font-size: 15px;
+const PanelTitle = styled.h2`
+	font-size: 16px;
 	font-weight: 700;
+	margin-bottom: 20px;
 `;
 
-const Chevron = styled.span`
-	font-size: 14px;
-	color: ${({ theme }) => theme.colors.textMuted};
-	transform: rotate(${({ $open }) => ($open ? '90deg' : '0deg')});
-	transition: transform 0.15s;
+const CharacterColumn = styled.div`
+	align-self: stretch;
+
+	@media (max-width: 1100px) {
+		display: none;
+	}
 `;
 
-// 우파가 지금 쓰고 있는 입력창 바로 옆에 붙도록 패널 안에 함께 둔다.
-const Panel = styled.div`
-	padding: 0 20px 20px;
-	display: flex;
-	align-items: flex-start;
-	gap: 24px;
-`;
+// 패널에서 포커스한 입력칸 높이까지 우파가 내려간다.
+// 포커스가 풀려도 그 자리에 머물고, 분야를 바꿀 때만 처음 위치로 돌아간다.
+// 따라갈 때는 느긋하게, 처음 위치로 돌아올 때는 빠르게.
+const MovingCharacter = styled.div`
+	transform: translateY(${({ $offset }) => $offset}px);
+	transition: transform ${({ $fast }) => ($fast ? '0.25s' : '0.55s')} ease;
 
-const BigTextarea = styled(Textarea)`
-	flex: 1;
-	min-width: 0;
-	min-height: 280px;
-`;
-
-const HintColumn = styled.div`
-	flex: none;
-	width: 260px;
+	@media (prefers-reduced-motion: reduce) {
+		transition: none;
+	}
 `;
 
 // 분야마다 우파가 던지는 확장 질문. 백엔드의 확장 질문 생성 API 가 붙으면
@@ -96,64 +102,95 @@ const FALLBACK_QUESTIONS = {
 
 function FreeTextPage() {
 	const navigate = useNavigate();
-	const freeTexts = useCreateFlowStore((state) => state.freeTexts);
-	const setFreeText = useCreateFlowStore((state) => state.setFreeText);
+	const [activeKey, setActiveKey] = useState(RECORD_CATEGORIES[0].key);
+	const [counts, setCounts] = useState({});
+	const [characterOffset, setCharacterOffset] = useState(0);
+	const [fastMove, setFastMove] = useState(false);
+	const characterRef = useRef(null);
 
-	const [openKey, setOpenKey] = useState(RECORD_CATEGORIES[0].key);
+	const handleChanged = (key, count) => setCounts((prev) => ({ ...prev, [key]: count }));
 
-	// 아무것도 안 썼으면 버튼이 '건너뛰기', 한 글자라도 있으면 '다음'.
-	const hasAnyText = Object.values(freeTexts).some((value) => value.trim().length > 0);
+	// 패널 안에서 포커스가 잡히면 우파를 그 높이로 내린다. 포커스가 빠져도
+	// 되돌리지 않아야 해서 blur 는 듣지 않는다.
+	const handleFocusCapture = (event) => {
+		// 모달은 포털로 띄우지만 리액트 이벤트는 트리를 타고 여기까지 올라온다.
+		// 모달 안에서 고르는 동안에는 우파가 움직이면 안 된다.
+		if (event.target.closest('[role="dialog"]')) return;
+
+		// 따라갈 대상은 '지금 쓰고 있는 입력칸'뿐이다. 단추까지 따라가면
+		// 불러오기를 누르는 순간(과 모달을 닫아 포커스가 되돌아올 때) 우파가
+		// 맨 위로 튀어 오른다.
+		if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) return;
+
+		const character = characterRef.current;
+		if (!character) return;
+
+		// 말풍선이 아니라 우파가 그 칸과 나란해져야 하므로, 지금 우파 위치와의
+		// 차이만큼만 더 움직인다.
+		const delta =
+			event.target.getBoundingClientRect().top - character.getBoundingClientRect().top;
+
+		setFastMove(false);
+		setCharacterOffset((previous) => Math.max(0, Math.round(previous + delta)));
+	};
+
+	const handleSelectCategory = (key) => {
+		setActiveKey(key);
+		setFastMove(true);
+		setCharacterOffset(0);
+	};
+
+	const activeLabel = RECORD_CATEGORIES.find(({ key }) => key === activeKey)?.label;
+	const hasAnyRecord = Object.values(counts).some((count) => count > 0);
 
 	return (
 		<CreateStepLayout
 			step={2}
-			title="자유 텍스트 입력"
-			description="분야별 토글을 열어 자유롭게 작성해 주세요"
+			title="활동이력 입력"
+			description="분야를 골라 활동이력을 등록해 주세요"
 			align="center"
 			backTo={ROUTES.CREATE_LINKS}
 			footer={
 				<Button size="lg" onClick={() => navigate(ROUTES.CREATE_JOB)}>
-					{hasAnyText ? '다음' : '건너뛰기'}
+					{hasAnyRecord ? '다음' : '건너뛰기'}
 				</Button>
 			}
 		>
 			<Layout>
-				<Accordion>
-					{RECORD_CATEGORIES.map(({ key, label }) => {
-						const open = openKey === key;
+				<CategoryList aria-label="활동이력 분야">
+					{RECORD_CATEGORIES.map(({ key, label }) => (
+						<CategoryButton
+							key={key}
+							type="button"
+							$active={key === activeKey}
+							aria-current={key === activeKey}
+							onClick={() => handleSelectCategory(key)}
+						>
+							{label}
+						</CategoryButton>
+					))}
+				</CategoryList>
 
-						return (
-							<Section key={key}>
-								<Toggle
-									type="button"
-									aria-expanded={open}
-									onClick={() => setOpenKey(open ? null : key)}
-								>
-									{label}
-									<Chevron $open={open}>▸</Chevron>
-								</Toggle>
+				<Panel onFocusCapture={handleFocusCapture}>
+					<PanelTitle>{activeLabel}</PanelTitle>
+					{/* key 를 줘야 분야를 바꿀 때 폼·목록 상태가 새로 시작한다. */}
+					<RecordManagerPanel
+						key={activeKey}
+						categoryKey={activeKey}
+						title={activeLabel}
+						variant="create"
+						onChanged={handleChanged}
+					/>
+				</Panel>
 
-								{open && (
-									<Panel>
-										<BigTextarea
-											placeholder={`${label} 내용을 입력하세요...`}
-											value={freeTexts[key]}
-											onChange={(event) =>
-												setFreeText(key, event.target.value)
-											}
-											aria-label={`${label} 자유 입력`}
-										/>
-										<HintColumn>
-											<AiQuestionCharacter
-												question={FALLBACK_QUESTIONS[key]}
-											/>
-										</HintColumn>
-									</Panel>
-								)}
-							</Section>
-						);
-					})}
-				</Accordion>
+				<CharacterColumn>
+					<MovingCharacter $offset={characterOffset} $fast={fastMove}>
+						<AiQuestionCharacter
+							question={FALLBACK_QUESTIONS[activeKey]}
+							characterRef={characterRef}
+						/>
+					</MovingCharacter>
+				</CharacterColumn>
 			</Layout>
 		</CreateStepLayout>
 	);

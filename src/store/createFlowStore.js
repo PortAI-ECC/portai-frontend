@@ -1,8 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { RECORD_CATEGORIES } from '../constants/recordCategories';
-
-const emptyFreeTexts = Object.fromEntries(RECORD_CATEGORIES.map(({ key }) => [key, '']));
 
 const initialState = {
 	// 필드명은 /api/profile 스키마를 따른다.
@@ -19,7 +16,6 @@ const initialState = {
 		photoName: '',
 	},
 	links: [],
-	freeTexts: emptyFreeTexts,
 	jobPosting: { mode: 'url', url: '', text: '', fileName: '' },
 	// 분석 요청이 끝나면 받는 id. 결과물 생성 요청에 그대로 실어 보낸다.
 	jobPostingId: null,
@@ -46,9 +42,6 @@ export const useCreateFlowStore = create(
 			setLinks: (links) => set({ links }),
 			addLink: (link) => set((state) => ({ links: [...state.links, link] })),
 			removeLink: (id) => set((state) => ({ links: state.links.filter((l) => l.id !== id) })),
-
-			setFreeText: (key, value) =>
-				set((state) => ({ freeTexts: { ...state.freeTexts, [key]: value } })),
 
 			setJobPosting: (patch) =>
 				set((state) => ({ jobPosting: { ...state.jobPosting, ...patch } })),

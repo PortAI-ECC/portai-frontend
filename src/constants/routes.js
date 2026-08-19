@@ -18,7 +18,7 @@ export const ROUTES = {
 export const CREATE_STEPS = [
 	{ label: '기본 정보 입력', path: ROUTES.CREATE_BASIC },
 	{ label: 'URL 입력', path: ROUTES.CREATE_LINKS },
-	{ label: '자유 텍스트 입력', path: ROUTES.CREATE_TEXT },
+	{ label: '활동이력 입력', path: ROUTES.CREATE_TEXT },
 	{ label: '채용 공고 입력', path: ROUTES.CREATE_JOB },
 	{ label: '결과', path: ROUTES.CREATE_DRAFT },
 ];
