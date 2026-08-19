@@ -386,13 +386,14 @@ const draftsFrom = (generation) => {
 };
 
 // DB 명세서 preferences.style ENUM 순서 그대로.
+// 예전에는 직무(주니어 개발자·데이터 분석가)와 조직문화(스타트업·엔터프라이즈)가
+// 섞여 있었는데, PortAI 사용자는 컴공만이 아니라 이공계 전체라 저 직무명이 맞지 않았다.
+// '간결↔자세', '격식↔친근' 두 축의 순수 문체만 남긴다.
 const STYLE_OPTIONS = [
 	{ value: 'CONCISE', label: '간결하게' },
-	{ value: 'JUNIOR_DEVELOPER', label: '주니어 개발자' },
-	{ value: 'DATA_ANALYST', label: '데이터 분석가' },
-	{ value: 'RESEARCHER', label: '연구자' },
-	{ value: 'STARTUP', label: '스타트업' },
-	{ value: 'ENTERPRISE', label: '엔터프라이즈' },
+	{ value: 'DETAILED', label: '자세하게' },
+	{ value: 'FORMAL', label: '격식있게' },
+	{ value: 'CASUAL', label: '친근하게' },
 ];
 
 // excluded_items.item_type 과 같은 값 집합이라 그대로 재사용한다.
