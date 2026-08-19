@@ -134,7 +134,10 @@ const HiddenFileInput = styled.input`
 	${visuallyHidden}
 `;
 
+// 마이페이지(EmptyArea 없이 이 문구만 단독으로 뜨는 쪽)는 위아래 32px 를 그대로 쓴다.
+// 생성 단계는 EmptyArea 가 감싸는 자리에서 문구만 필요해 패딩을 겹치지 않게 뺀다.
 const Empty = styled.p`
+	padding: ${({ $standalone }) => ($standalone ? '32px 0' : '0')};
 	text-align: center;
 	font-size: 14px;
 	color: ${({ theme }) => theme.colors.textMuted};
@@ -464,7 +467,7 @@ function RecordManagerPanel({ categoryKey, title = '기록', variant = 'manage',
 						<Empty>아직 등록한 항목이 없어요.</Empty>
 					</EmptyArea>
 				) : (
-					!isCreate && <Empty>아직 등록한 항목이 없어요.</Empty>
+					!isCreate && <Empty $standalone>아직 등록한 항목이 없어요.</Empty>
 				)
 			) : (
 				loadButton && <LoadRow>{loadButton}</LoadRow>
