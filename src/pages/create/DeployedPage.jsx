@@ -37,17 +37,24 @@ const UrlRow = styled.div`
 	gap: 16px;
 `;
 
+// flex 컨테이너 자신에 text-overflow: ellipsis 를 주면 justify-content: center 와
+// 맞물려 넘치는 텍스트의 양쪽이 잘려 중간 부분만 보인다(주소가 http:// 로 안 시작하는
+// 것처럼 보였던 원인). 말줄임은 안쪽 span 에 맡기고, 이 요소는 왼쪽 정렬만 한다.
 const UrlBox = styled.p`
 	flex: 1;
 	height: 56px;
 	display: flex;
 	align-items: center;
-	justify-content: center;
+	justify-content: flex-start;
 	padding: 0 20px;
 	font-size: 15px;
 	background: ${({ theme }) => theme.colors.surfaceSolid};
 	border: 1px solid ${({ theme }) => theme.colors.border};
 	border-radius: ${({ theme }) => theme.radii.md};
+	overflow: hidden;
+`;
+
+const UrlText = styled.span`
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -211,7 +218,9 @@ function DeployedPage() {
 				{portfolioUrl ? (
 					<>
 						<UrlRow>
-							<UrlBox>{portfolioUrl}</UrlBox>
+							<UrlBox>
+								<UrlText>{portfolioUrl}</UrlText>
+							</UrlBox>
 							<Button size="lg" onClick={handleCopy} disabled={urlTooLong}>
 								{copied ? '복사됨!' : 'URL 복사하기'}
 							</Button>
