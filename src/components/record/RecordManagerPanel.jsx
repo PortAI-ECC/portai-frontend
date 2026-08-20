@@ -235,7 +235,13 @@ const toPayload = (form, fields) =>
  *   '저장된 기록 불러오기'로 고른 것과 여기서 새로 추가한 것만 보여준다.
  *   수정은 마이페이지에서만 하도록 여기선 빼기(목록에서 제외)만 남긴다.
  */
-function RecordManagerPanel({ categoryKey, title = '기록', variant = 'manage', onChanged }) {
+function RecordManagerPanel({
+	categoryKey,
+	title = '기록',
+	variant = 'manage',
+	initialItems = [],
+	onChanged,
+}) {
 	const isCreate = variant === 'create';
 	const isLoggedIn = useAuthStore(selectIsLoggedIn);
 	const fields = RECORD_FIELDS[categoryKey] ?? [];
@@ -246,7 +252,9 @@ function RecordManagerPanel({ categoryKey, title = '기록', variant = 'manage',
 	const showFreeText = isCreate && !CATEGORIES_WITHOUT_FREE_TEXT.has(categoryKey);
 
 	// 생성 단계에서는 사용자가 고른 것 + 여기서 새로 추가한 것만 담긴다.
-	const [items, setItems] = useState([]);
+	// 분야를 오갈 때 이 목록이 사라지지 않도록, 이전에 이 분야에서 담아 뒀던
+	// 것을 부모(FreeTextPage)가 initialItems 로 그대로 돌려준다.
+	const [items, setItems] = useState(initialItems);
 	const [loading, setLoading] = useState(!isCreate);
 	const [error, setError] = useState('');
 	const [saving, setSaving] = useState(false);
@@ -282,14 +290,14 @@ function RecordManagerPanel({ categoryKey, title = '기록', variant = 'manage',
 	const refresh = async () => {
 		const data = await api.listItems();
 		setItems(data);
-		onChanged?.(categoryKey, data.length);
+		onChanged?.(categoryKey, data.length, data);
 	};
 
 	// 모달에서 고른 기록만 목록에 앉힌다. 서버 데이터는 건드리지 않는다.
 	const handlePicked = (picked) => {
 		setPickerOpen(false);
 		setItems(picked);
-		onChanged?.(categoryKey, picked.length);
+		onChanged?.(categoryKey, picked.length, picked);
 	};
 
 	const handleSubmit = async (event) => {
@@ -325,7 +333,7 @@ function RecordManagerPanel({ categoryKey, title = '기록', variant = 'manage',
 					const next = added ? [...items, added] : all;
 
 					setItems(next);
-					onChanged?.(categoryKey, next.length);
+					onChanged?.(categoryKey, next.length, next);
 				}
 			}
 
@@ -382,7 +390,7 @@ function RecordManagerPanel({ categoryKey, title = '기록', variant = 'manage',
 	const handleExclude = (item) => {
 		const next = items.filter((entry) => entry[idField] !== item[idField]);
 		setItems(next);
-		onChanged?.(categoryKey, next.length);
+		onChanged?.(categoryKey, next.length, next);
 	};
 
 	const handleDelete = async (item) => {
@@ -479,7 +487,9 @@ function RecordManagerPanel({ categoryKey, title = '기록', variant = 'manage',
 				<List>
 					{items.map((item, index) => (
 						<Item key={item[idField]}>
-							{categoryKey === 'techStacks' && (
+							{/* 순서 변경은 서버의 '전체 순서'를 저장하는 동작인데, 생성
+							    단계의 목록은 전체가 아니라 이번에 고른 일부뿐이라 여기서는 뺀다. */}
+							{categoryKey === 'techStacks' && !isCreate && (
 								<>
 									<OrderButton
 										type="button"

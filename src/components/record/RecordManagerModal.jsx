@@ -5,7 +5,7 @@ import RecordManagerPanel from './RecordManagerPanel';
 function RecordManagerModal({ open, categoryKey, title, onClose, onChanged }) {
 	return (
 		<Modal open={open} onClose={onClose} title={`${title} 관리`} width="820px">
-			<RecordManagerPanel categoryKey={categoryKey} onChanged={onChanged} />
+			<RecordManagerPanel categoryKey={categoryKey} title={title} onChanged={onChanged} />
 		</Modal>
 	);
 }
