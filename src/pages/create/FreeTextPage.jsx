@@ -104,11 +104,19 @@ function FreeTextPage() {
 	const navigate = useNavigate();
 	const [activeKey, setActiveKey] = useState(RECORD_CATEGORIES[0].key);
 	const [counts, setCounts] = useState({});
+	// RecordManagerPanel 은 key={activeKey} 로 분야를 바꿀 때마다 통째로
+	// 다시 마운트된다(폼·수정 상태를 새로 시작하려고 일부러 그렇게 뒀다).
+	// 그런데 그러면 패널 안에서만 들고 있던 '이번에 고른 기록' 목록도 같이
+	// 날아가 버려서, 분야별로 여기서 대신 들고 있다가 initialItems 로 되돌려준다.
+	const [itemsByCategory, setItemsByCategory] = useState({});
 	const [characterOffset, setCharacterOffset] = useState(0);
 	const [fastMove, setFastMove] = useState(false);
 	const characterRef = useRef(null);
 
-	const handleChanged = (key, count) => setCounts((prev) => ({ ...prev, [key]: count }));
+	const handleChanged = (key, count, items) => {
+		setCounts((prev) => ({ ...prev, [key]: count }));
+		if (items) setItemsByCategory((prev) => ({ ...prev, [key]: items }));
+	};
 
 	// 패널 안에서 포커스가 잡히면 우파를 그 높이로 내린다. 포커스가 빠져도
 	// 되돌리지 않아야 해서 blur 는 듣지 않는다.
@@ -179,6 +187,7 @@ function FreeTextPage() {
 						categoryKey={activeKey}
 						title={activeLabel}
 						variant="create"
+						initialItems={itemsByCategory[activeKey] ?? []}
 						onChanged={handleChanged}
 					/>
 				</Panel>
