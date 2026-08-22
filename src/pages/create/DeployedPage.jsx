@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Button from '../../components/common/Button';
@@ -145,10 +145,7 @@ function DeployedPage() {
 	const [downloading, setDownloading] = useState(false);
 	const [downloadError, setDownloadError] = useState('');
 
-	// 배포까지 끝났으면 이 위자드는 여기서 완결이다. 입력값과 '어디까지 가봤는지'를
-	// 비워 둬야, 다음에 '새로 만들기'로 들어왔을 때 1단계부터 다시 밟게 된다.
-	//
-	// 다만 이 화면은 스토어를 비운 뒤에도 결과물 id 가 계속 필요하다(PDF 내려받기).
+	// 이 화면은 스토어를 비운 뒤에도 결과물 id 가 계속 필요하다(PDF 내려받기).
 	// 첫 렌더 값만 붙잡아 두면 새로고침했을 때는 이미 비워진 뒤라 id 를 잃는다.
 	// 그래서 앞 화면이 주소로 넘겨준 id 를 먼저 보고, 없을 때만 스토어를 쓴다.
 	const [searchParams] = useSearchParams();
@@ -156,9 +153,18 @@ function DeployedPage() {
 	const [idFromStore] = useState(generationId);
 	const downloadableId = idFromUrl ?? idFromStore;
 
-	useEffect(() => {
+	// 배포까지 끝났으면 이 위자드는 완결이다. 입력값을 비워 둬야 다음에
+	// '새로 만들기'로 들어왔을 때 1단계부터 다시 밟는다.
+	//
+	// 다만 들어오자마자 비우면 안 된다. 그러면 이 화면을 한 번 거친 뒤 다시
+	// 미리보기로 돌아가 배포했을 때 이름·이메일이 이미 지워진 채로 공유 링크가
+	// 만들어져, 내용이 텅 빈 링크가 나갔다(실제로 그렇게 배포된 적이 있다).
+	// 그래서 사용자가 결과를 손에 넣고(링크 복사) 이 화면에서 다음으로 넘어갈 때
+	// 비운다. 뒤로 가기로 미리보기에 돌아가는 길은 일부러 건드리지 않는다.
+	const leaveAndReset = (to) => {
 		reset();
-	}, [reset]);
+		navigate(to);
+	};
 
 	// 공유 링크는 조회 API 없이 내용을 slug 안에 통째로 담는다(utils/shareLink).
 	// 앞 화면이 스토어가 비워지기 전에 만들어 넘겨준 것을 그대로 쓴다.
@@ -179,6 +185,10 @@ function DeployedPage() {
 			await navigator.clipboard.writeText(portfolioUrl);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
+			// 링크가 사용자 손에 들어갔으면 이 위자드는 할 일을 다 했다.
+			// 공유 주소·PDF 용 id 는 스토어가 아니라 주소와 라우터 state 에 있어
+			// 여기서 비워도 이 화면은 그대로 동작한다.
+			reset();
 		} catch {
 			setCopyError('복사하지 못했어요. 위 주소를 직접 선택해 복사해 주세요.');
 		}
@@ -259,11 +269,11 @@ function DeployedPage() {
 				{downloadError && <ErrorText role="alert">{downloadError}</ErrorText>}
 
 				{isLoggedIn ? (
-					<ActionButton size="lg" onClick={() => navigate(ROUTES.MYPAGE)}>
+					<ActionButton size="lg" onClick={() => leaveAndReset(ROUTES.MYPAGE)}>
 						마이페이지
 					</ActionButton>
 				) : (
-					<ActionButton size="lg" onClick={() => navigate(ROUTES.HOME)}>
+					<ActionButton size="lg" onClick={() => leaveAndReset(ROUTES.HOME)}>
 						로그인으로 결과 저장하기
 					</ActionButton>
 				)}

@@ -234,6 +234,20 @@ export function buildPortfolioTemplateData({ records, basicInfo, intro, emphasis
 		sections: orderSections(rawSections, emphasizedKeys),
 	});
 
+	const introText = (intro ?? '').trim();
+
+	// 프로필까지 포함해 '화면에 그릴 게 하나도 없는' 상태. 공유 링크는 이 값을 보고
+	// 빈 링크가 나가는 걸 막는다 — 링크에는 발급 시점의 내용이 통째로 박히므로,
+	// 비어 있을 때 만들어 두면 나중에 고쳐도 그 링크는 영영 빈 화면이다.
+	const hasProfile = Object.values(profile).some(Boolean);
+	const isEmpty =
+		!hasProfile &&
+		!introText &&
+		links.length === 0 &&
+		projects.length === 0 &&
+		skills.length === 0 &&
+		sections.length === 0;
+
 	return {
 		profile,
 		mailto: profile.email ? `mailto:${profile.email}` : '',
@@ -244,7 +258,7 @@ export function buildPortfolioTemplateData({ records, basicInfo, intro, emphasis
 		projectsNo,
 		skillsNo,
 		projectsHot: emphasizedKeys.includes('projects'),
-		intro: (intro ?? '').trim(),
-		isEmpty: projects.length === 0 && skills.length === 0 && sections.length === 0,
+		intro: introText,
+		isEmpty,
 	};
 }

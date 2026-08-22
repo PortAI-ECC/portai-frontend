@@ -106,10 +106,18 @@ function FinalPreviewPage() {
 		};
 	}, [isLoggedIn, generationId]);
 
-	// 배포 완료 화면은 들어가자마자 위자드를 비우므로, 거기서도 계속 필요한 결과물 id 는
-	// 주소에 실어 보낸다(새로고침에도 살아남게). 공유 링크의 slug 도 같은 이유로 여기서
-	// 미리 만들어 넘긴다 — 스토어가 비워진 뒤에는 담을 내용을 다시 모을 수 없다.
+	// 배포 완료 화면에서도 계속 필요한 결과물 id 는 주소에 실어 보낸다(새로고침에도
+	// 살아남게). 공유 링크의 slug 도 여기서 미리 만들어 넘긴다.
+	//
+	// 내용이 하나도 없으면 링크를 만들지 않는다. slug 에는 발급 시점의 내용이 통째로
+	// 박히므로 빈 채로 만들면 나중에 채워 넣어도 그 링크는 영영 빈 화면이다.
+	// (실제로 이름·이메일조차 없는 링크가 배포된 적이 있다.)
 	const handleDone = async () => {
+		if (portfolioData.isEmpty) {
+			setError('아직 담을 내용이 없어요. 기본 정보나 활동 이력을 먼저 입력해 주세요.');
+			return;
+		}
+
 		const shareSlug = await encodePortfolioSlug({ data: portfolioData, templateId });
 
 		navigate(
