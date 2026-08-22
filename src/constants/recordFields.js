@@ -133,7 +133,10 @@ export const RECORD_SUMMARY = {
 		title: 'title',
 		subtitle: (item) => [item.role, item.startDate].filter(Boolean).join(' · '),
 	},
-	contests: { title: 'name', subtitle: (item) => [item.host, item.result].filter(Boolean).join(' · ') },
+	contests: {
+		title: 'name',
+		subtitle: (item) => [item.host, item.result].filter(Boolean).join(' · '),
+	},
 	careers: {
 		title: 'companyName',
 		subtitle: (item) => [item.position, item.startDate].filter(Boolean).join(' · '),

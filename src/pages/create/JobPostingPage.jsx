@@ -182,7 +182,9 @@ function JobPostingPage() {
 			);
 
 			if (finished.status === 'FAILED') {
-				setError(finished.failReason ?? '채용 공고를 분석하지 못했어요. 다시 시도해 주세요.');
+				setError(
+					finished.failReason ?? '채용 공고를 분석하지 못했어요. 다시 시도해 주세요.',
+				);
 				return;
 			}
 
@@ -207,7 +209,13 @@ function JobPostingPage() {
 			backTo={ROUTES.CREATE_TEXT}
 			footer={
 				<Button size="lg" onClick={handleNext} disabled={analyzing}>
-					{analyzing ? '분석 중...' : canAnalyze ? '분석 후 다음' : hasInput ? '다음' : '건너뛰기'}
+					{analyzing
+						? '분석 중...'
+						: canAnalyze
+							? '분석 후 다음'
+							: hasInput
+								? '다음'
+								: '건너뛰기'}
 				</Button>
 			}
 		>

@@ -134,19 +134,29 @@ const recordHandlers = RECORD_SPECS.flatMap((spec) => {
 				const item = { [spec.idField]: nextIdFor(spec.path), ...payload };
 				collection().push(item);
 				return HttpResponse.json(
-					{ [spec.idField]: item[spec.idField], message: `${spec.label}이(가) 등록되었습니다.` },
+					{
+						[spec.idField]: item[spec.idField],
+						message: `${spec.label}이(가) 등록되었습니다.`,
+					},
 					{ status: 201 },
 				);
 			}),
 			http.put('/activities/:id', async ({ params, request }) => {
 				const item = collection().find((row) => row[spec.idField] === Number(params.id));
-				if (!item) return fail(404, spec.errorCode, `해당 ${spec.label}을(를) 찾을 수 없습니다.`);
+				if (!item)
+					return fail(404, spec.errorCode, `해당 ${spec.label}을(를) 찾을 수 없습니다.`);
 				Object.assign(item, await body(request));
-				return HttpResponse.json({ message: `${spec.label}이(가) 수정되었습니다.`, ...item });
+				return HttpResponse.json({
+					message: `${spec.label}이(가) 수정되었습니다.`,
+					...item,
+				});
 			}),
 			http.delete('/activities/:id', ({ params }) => {
-				const index = collection().findIndex((row) => row[spec.idField] === Number(params.id));
-				if (index === -1) return fail(404, spec.errorCode, `해당 ${spec.label}을(를) 찾을 수 없습니다.`);
+				const index = collection().findIndex(
+					(row) => row[spec.idField] === Number(params.id),
+				);
+				if (index === -1)
+					return fail(404, spec.errorCode, `해당 ${spec.label}을(를) 찾을 수 없습니다.`);
 				collection().splice(index, 1);
 				return HttpResponse.json({ message: `${spec.label}이(가) 삭제되었습니다.` });
 			}),

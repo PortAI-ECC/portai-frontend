@@ -250,9 +250,7 @@ function MyPage() {
 									<Thumbnail
 										as="button"
 										type="button"
-										onClick={() =>
-											handleOpenSite(item.id ?? item.generationId)
-										}
+										onClick={() => handleOpenSite(item.id ?? item.generationId)}
 									/>
 									<SiteName>{item.title ?? '제목 없는 포트폴리오'}</SiteName>
 								</SiteCard>
